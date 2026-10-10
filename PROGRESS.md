@@ -63,6 +63,8 @@ Owners follow Case A in BUILD_PLAN.md section 8 (Vivado on the Codex machine). *
 ## Plan changes
 <!-- One line each: date-time, what changed in PROMPTS.md / BUILD_PLAN.md, and why. -->
 - 10 Oct 13:05, contracts F1–F6 (accepted by user): CLAUDE.md interface line → `step()` (F1); P2 Params in register order + range checks (F2), reset frame sets b = x before scoring (F4), and P2 now also writes tools/dump_golden.py (F6, moved from P8); P3 device obeys verdict.state (F3); P5 verdict adds camera/verifier/evidence, DynamoDB adds time_ist/verify_ms (F5); P6/P7 use tools/contracts.py + BWV1 verdict packet (F5); P4 may create the cloud/verify stub + cameras.json (F6).
+- 10 Oct 13:23, contracts F7 (decided by user 13:20): spec v1 now has K_FAST = 0 (snap b = x after a gated frame, range 0–15) and the update rounding term `(1 << k) >> 1`; contracts.md sections 6–8 updated. PROMPTS.md P2 (spec + constants), P8 (rounding note), P3 (REJECTED emits `rebaseline`) and P6 (rebaseline → engine.reset()) edited to match. Why: v1 left all 3,600 tiles flagged forever after a lighting change.
+- 10 Oct 13:23, contracts section 8 (◇ additive): optional extra vector sets `<set>-u<N>` (`dump_golden.py --update-every N --reset-at 0,30`) cover update=0 frames and a mid-sequence reset; same format.
 
 ## Log
 <!-- One line per finished task: HH:MM, ID, tool, one-line result. -->

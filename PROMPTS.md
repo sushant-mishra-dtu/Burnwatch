@@ -117,7 +117,7 @@ Baseline update (state carried between frames; prev_gate = gate of the previous 
   elif update_this_frame:
       k = K_FAST if prev_gate else K_SLOW
       for tiles where (prev_gate or not flagged):     # flagged tiles are frozen so smoke isn't absorbed
-          b += (x - b + (1 << (k-1))) >> k             # numpy >> on int32 is an arithmetic shift
+          b += (x - b + ((1 << k) >> 1)) >> k          # numpy >> on int32 is an arithmetic shift; k = 0 snaps b = x (F7)
   then prev_gate = gate
 
 Starting constants (config.py, one dataclass Params with these defaults; fields in HLS register order per
@@ -125,7 +125,7 @@ docs/contracts.md F2: K_SLOW, K_FAST, W_EDGE, W_GREY, SCORE_SHIFT, T_FLAG, SAT_M
 UPDATE_EVERY_ARM, UPDATE_EVERY_PL; Params validates the ranges in contracts.md section 6; P3's ARM-only constants
 go in a separate dataclass):
   W_EDGE=4, W_GREY=4, SCORE_SHIFT=8, T_FLAG=40, SAT_MAX=40, SAT_TOL=4<<8,
-  T_GLOBAL=24<<8, GATE_TILES=1440, K_SLOW=6, K_FAST=2,
+  T_GLOBAL=24<<8, GATE_TILES=1440, K_SLOW=6, K_FAST=0 (snap after a gated frame, contracts.md F7; range 0-15),
   UPDATE_EVERY_ARM=1, UPDATE_EVERY_PL=20   (same forgetting time in seconds at ~3 fps vs 60 fps)
 
 API:
@@ -170,7 +170,7 @@ Build the ARM-side logic on top of detector/golden.py. Read detector/golden.py a
    - CLEAR → SUSPECT when there is a candidate AND >= 120 s since the last upload for this camera. It emits an "upload" action with the event dict:
      {camera, state, score (mean score in region / 255, 2 decimals), tiles, bbox, s3_key "frames/<camera>/<ts>.jpg", ts}
    - SUSPECT → CONFIRMED on a verdict whose state is "CONFIRMED" (the cloud applies CONF_THRESHOLD; docs/contracts.md F3).
-   - SUSPECT → REJECTED on a verdict whose state is "REJECTED": add the region's tiles to the ignore mask for 180 s, then CLEAR.
+   - SUSPECT → REJECTED on a verdict whose state is "REJECTED": add the region's tiles to the ignore mask for 180 s, emit a "rebaseline" action (the caller calls engine.reset(), contracts.md F7), then CLEAR.
    - Ignore a verdict whose ts isn't the open event's ts. Event/verdict fields: docs/contracts.md section 2 (ts = integer Unix seconds).
    - CONFIRMED → CLEAR after the region has been gone for 60 s.
    - SUSPECT with no verdict for 90 s stays SUSPECT (amber) and emits "verdict_timeout" once.
@@ -292,6 +292,7 @@ PART B: device/main.py (on the PYNQ)
   ARM mode: golden TileEngine in ARM-fast mode (frame[::2, ::2], TILE=8, UPDATE_EVERY_ARM). PL mode: same step() interface.
 - RegionTracker + StateMachine from detector/. Execute the returned actions:
   upload → cv2.imencode JPEG quality 80 of the full-res frame (RGB→BGR) → cloud.upload_frame + publish_event.
+  rebaseline → engine.reset() (a REJECTED verdict; contracts.md F7).
   Verdicts from the queue go to the state machine.
 - LEDs (base.rgbleds[4] and [5], check the indices on the board): CLEAR green, SUSPECT yellow, CONFIRMED red, REJECTED blue, gated frame = brief white blink on LED 5.
 - UDP to --viewer-ip:9999 every processed frame: struct header (magic b"BW01", frame_no u32, ts f64, state u8, gate u8, fps f32, mode u8, bbox 4×u16) + 3600 uint8 scores. Never video.
@@ -340,7 +341,7 @@ Implementation notes:
 - Target II=1 on the pixel loop and >= 60 fps at 100 MHz (<= 1.66M cycles per frame). Make sure frame reads become AXI bursts (check the burst section of the synthesis report).
 - Sobel with two line buffers plus a 3x3 window. Watch the 1-pixel latency: E for pixel (r,c) is only known after row r+1 / column c+1 arrive. Assign it to the tile of (r,c), not of the newest pixel. Border E = 0 exactly as in golden.
 - Per tile-row: 80 x 3 accumulators. When a tile row is complete, run a short loop over its 80 tiles: means, score, flag, changed count, baseline update (with the PREVIOUS frame's gate), write 80 scores.
-- Signed arithmetic: compute edge_drop, grey_shift and the baseline delta in ap_int with enough bits. The baseline update rounds with + (1 << (k-1)) and then an arithmetic right shift, exactly like numpy.
+- Signed arithmetic: compute edge_drop, grey_shift and the baseline delta in ap_int with enough bits. The baseline update rounds with + ((1 << k) >> 1) and then an arithmetic right shift, exactly like numpy. k_fast may be 0 (snap b = x, contracts.md F7), so never write 1 << (k-1).
 - gate is decided at the end of the frame from changed and becomes prev_gate for the next call.
 
 Test vectors: tools/dump_golden.py (written by Claude Code at the end of P2, contracts.md F6; Codex runs it and reports problems instead of editing it)

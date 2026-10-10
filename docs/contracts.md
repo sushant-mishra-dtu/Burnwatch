@@ -14,6 +14,7 @@ Taken from CLAUDE.md and PROMPTS.md (P2–P8). Items marked **⚑F*n*** were con
 | F4 | What does a **reset frame** score against? P2 lists `if reset: b = x` in the update block, after scoring, so frame 0 is scored against whatever baseline is left in memory. In csim that is zeros, but on the board it is BRAM left over from the previous run, so P9's on-board check would fail on frame 0 of every vector set after the first | P2 / P8 / P9 | **On a reset frame, set `b = x` first, then score.** That gives scores = 0, changed = 0, gate = False, prev_gate = False, whatever the previous state was |
 | F5 | P7's viewer shows "the last verdict text", but P6's UDP packet carries no verdict | P6 vs P7 | Add a second UDP packet, `BWV1` + verdict JSON, which the device sends once per verdict (section 5), and add `camera`, `verifier` and `evidence` to the verdict JSON (section 2) |
 | F6 | Folder ownership (BUILD_PLAN section 8): P4 (Codex) writes the stub `cloud/verify/app.py` and `cloud/verify/cameras.json`, but `cloud/verify/` belongs to Claude Code. P8 (Codex) writes `tools/dump_golden.py`, but `tools/` belongs to Claude Code | BUILD_PLAN section 8 vs P4/P8 | Codex creates the two `cloud/verify/` files in P4, and Claude Code owns them from P5 on. **Claude Code writes `tools/dump_golden.py` at the end of P2**, because it is coupled to golden.py and P8 can't start before P2 anyway. Codex only runs it |
+| F7 | Spec v1 could deadlock: flagged tiles are frozen, and after a global change (lights on in a dark scene, off in a bright one) the gate shuts with 10–18 grey levels of baseline gap left, which still scores ≥ T_FLAG, so all 3,600 tiles stayed flagged forever (measured, P2) | P2 spec | Decided by the user 10 Oct 13:20. **`K_FAST` may be 0, meaning snap `b = x` after a gated frame, and 0 is the default.** The update's rounding term is written `(1 << k) >> 1`, identical to `1 << (k-1)` for k ≥ 1 and 0 for k = 0. All six lighting cases now recover in 2 frames. **Plus a caller rule: a REJECTED verdict makes the device call `eng.reset()`** (P3 emits a `rebaseline` action). Ghosts (something in view at a reset that later leaves) stay a documented limitation |
 
 ## ◇ Gaps filled here (shout if you disagree)
 
@@ -179,7 +180,7 @@ eng.prev_gate                         # bool, = gate after the step
 | Field | Default | Range | Units |
 |---|---|---|---|
 | `K_SLOW` | 6 | 1–15 | baseline shift (slow) |
-| `K_FAST` | 2 | 1–15 | baseline shift after a gated frame |
+| `K_FAST` | 0 | 0–15 | baseline shift after a gated frame; 0 = snap `b = x` (⚑F7) |
 | `W_EDGE` | 4 | 0–255 | weight |
 | `W_GREY` | 4 | 0–255 | weight |
 | `SCORE_SHIFT` | 8 | 0–31 | shift |
@@ -190,6 +191,10 @@ eng.prev_gate                         # bool, = gate after the step
 | `GATE_TILES` | 1440 | 0–3600 | tiles |
 | `UPDATE_EVERY_ARM` | 1 | ≥ 1 | frames (caller side, not a register) |
 | `UPDATE_EVERY_PL` | 20 | ≥ 1 | frames (caller side, not a register) |
+
+**Baseline update** (after scoring, not on a reset frame, only when `update_this_frame`): `k = K_FAST if prev_gate else K_SLOW`; on tiles where `prev_gate or score < T_FLAG`: `b += (x - b + ((1 << k) >> 1)) >> k`, with `>>` an arithmetic shift (⚑F7).
+
+**Caller rule (⚑F7):** when a verdict with `state` `"REJECTED"` arrives, the device calls `eng.reset()`, so the next frame re-baselines everything Claude judged not to be smoke.
 
 With these ranges every intermediate fits in int32: `raw ≤ 255·65280·2 < 2²⁵`, and `bS + SAT_TOL ≤ 130815` (18 bits).
 
@@ -218,6 +223,7 @@ void tile_engine(
 - **Frame:** 1280×720 = 921600 words, row-major, one pixel per word: `R | G<<8 | B<<16`, bits 31:24 written as 0 and ignored by the core. Use `tools.contracts.pack_rgb_words`.
 - **Scores:** 3600 bytes, row-major: `scores[ty*80 + tx]`, ty 0..44, tx 0..79.
 - **State:** `static` arrays `bE, bY, bS` (uint16 ×3600, BRAM) and `prev_gate`. A reset call follows ⚑F4.
+- **Baseline update:** exactly section 6. `k_fast` may be 0 (snap, ⚑F7): the rounding term is `(1 << k) >> 1`, never `1 << (k-1)`.
 - **Outputs:** `gate_out` = this frame's gate. `changed_out` = this frame's changed count. `frame_count` = calls since the last reset, counting the reset call as 1.
 - **`hls/config.h`** (from `tools/gen_header.py`): geometry `IMG_W 1280`, `IMG_H 720`, `TILE 16`, `TILES_X 80`, `TILES_Y 45`, `N_TILES 3600`, and the defaults `CFG_<FIELD>` (for example `CFG_K_SLOW 6`). The core takes every tunable at run time. The defaults are for the testbench only.
 
@@ -234,6 +240,8 @@ testdata/golden/<set>/        # <set> = clip basename, or "synthetic"
 ```
 `XXXX` is 4 digits, zero-padded, from 0000. Each set has ≥ 40 frames: frame 0 is a reset frame, frame 20 is the +40 brightness (gated) frame, and `update_this_frame` = 1 on every frame. FULL mode only.
 
+Optional extra sets (◇, added in P2): `dump_golden.py --update-every N --reset-at 0,30 --name <set>-u<N>` writes a set with `update_this_frame = 0` on frames where `i % N != 0` and extra reset frames, to cover the PL's `UPDATE_EVERY_PL` cadence and a reset with state left over. Same format; the testbench needs nothing new because `expect.txt` carries `reset` and `update` per frame.
+
 **params.txt**: one `KEY value` per line, decimal integers, `#` starts a comment. The keys are the `Params` field names plus the geometry:
 ```
 # BurnWatch golden vectors, spec v1
@@ -243,7 +251,7 @@ IMG_H 720
 TILE 16
 FRAMES 40
 K_SLOW 6
-K_FAST 2
+K_FAST 0
 W_EDGE 4
 W_GREY 4
 SCORE_SHIFT 8
