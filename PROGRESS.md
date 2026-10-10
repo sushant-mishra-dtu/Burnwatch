@@ -26,7 +26,7 @@ Owners follow Case A in BUILD_PLAN.md section 8 (Vivado on the Codex machine). *
 | ID | Task | Owner | Depends on | Status | Notes |
 |---|---|---|---|---|---|
 | P0 | Repo bootstrap | Claude Code | none | done | Folder layout (+ `overlays/`) with READMEs, root README skeleton, MIT LICENSE, .gitignore, requirements files. Local git repo on `main`; no remote yet. |
-| P0b | `docs/contracts.md` | Claude Code | P0 | todo | |
+| P0b | `docs/contracts.md` | Claude Code | P0 | waiting: user decision on flags F1–F6 at the top of docs/contracts.md | contracts.md (8 sections) + tools/contracts.py + tests/test_contracts.py (5 pass). UDP frame packet = 3,631 bytes. Body uses the recommended defaults. |
 | U1 | First-hour checklist (BUILD_PLAN section 3) | You | none | todo | |
 | P1 | camfeed.py + HDMI check | Claude Code | P0 | todo | |
 | P2 | Golden model + tests (spec v1 frozen at H5) | Claude Code | P0b | todo | |
