@@ -1,0 +1,9 @@
+# Vivado project and build outputs (recreated by scripts/create_project.tcl and scripts/build.tcl)
+vivado/
+output/
+.Xil/
+*.jou
+*.log
+# local simulator builds (scripts/run_sim_local.sh)
+sim/build/
+__pycache__/

@@ -19,6 +19,7 @@ cloud/      SAM template, Lambda verifier, IoT/IAM setup scripts, cameras.json
 tools/      camfeed.py, viewer.py, eval_clips.py, dump_golden.py, bench.py, gen_header.py
 testdata/   labels.csv (clips themselves are git-ignored)
 docs/       architecture figure, results.md
+zedboard/   tile engine as hand-written Verilog + VIO for a ZedBoard (Vivado 2022.1, Cloud Labs)
 ```
 
 ## Hard rules
