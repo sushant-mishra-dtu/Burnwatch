@@ -58,4 +58,4 @@ This project is MIT-licensed (see [LICENSE](LICENSE)). It builds on:
 - [OpenCV](https://opencv.org/) (Apache-2.0)
 - [AWS SAM CLI](https://github.com/aws/aws-sam-cli) (Apache-2.0)
 
-## Built 8–11 October 2026 for Environmental Hacks 2026
+## Built the project from October 8 to 11, 2026, for Environmental Hacks 2026.
