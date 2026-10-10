@@ -29,7 +29,7 @@ Owners follow Case A in BUILD_PLAN.md section 8 (Vivado on the Codex machine). *
 | P0b | `docs/contracts.md` | Claude Code | P0 | done | docs/contracts.md (8 sections) + tools/contracts.py + tests/test_contracts.py (5 pass). UDP frame packet = 3,631 bytes, ts = integer Unix seconds. User accepted all 6 flagged defaults (F1–F6) at 13:05. |
 | U1 | First-hour checklist (BUILD_PLAN section 3) | You | none | todo | |
 | P1 | camfeed.py + HDMI check | Claude Code | P0 | blocked: plug laptop HDMI out → PYNQ HDMI IN, set that display to 1280×720 @ 60 Hz in Extend mode, run `python tools/camfeed.py --camera 1 --monitor N`, then on the board `bash device/run.sh device/hdmi_check.py` (device/README.md) | tools/camfeed.py (camera/clip, letterbox 1280×720, full screen, q/b/space), device/hdmi_check.py, device/run.sh, device/README.md. Laptop side tested: `--list` probes OK, letterbox and clip loop verified headless. Board run pending (board not reachable yet). |
-| P2 | Golden model + tests (spec v1 frozen at H5) | Claude Code | P0b | in progress (13:24) | |
+| P2 | Golden model + tests (spec v1 frozen at H5) | Claude Code | P0b | waiting: user OK on docs/golden_test1.png + decision on F7 (flagged tiles can stay frozen forever) | detector/config.py + golden.py (spec v1 exactly), tests/test_golden.py 18 pass + 1 strict xfail (F7), tools/gen_header.py → hls/config.h, tools/dump_golden.py (--synthetic set OK: frame 20 gated, digest b860f0ecbc50c466). Laptop: FULL 57 ms/frame, ARM-fast 14 ms/frame. |
 | U2 | Record the clip set + fill `testdata/labels.csv` | You | P1 | todo | |
 | P4 | AWS stack + IoT thing + device IAM | Codex | P0b | todo | |
 | P5 | Lambda verifier (Claude on Bedrock) | Claude Code | P4 | todo | |
