@@ -22,6 +22,7 @@ testdata/golden/
 # Device runtime output
 queue/
 recordings/
+/frames/
 
 # AWS SAM
 .aws-sam/

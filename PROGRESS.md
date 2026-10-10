@@ -28,7 +28,7 @@ Owners follow Case A in BUILD_PLAN.md section 8 (Vivado on the Codex machine). *
 | P0 | Repo bootstrap | Claude Code | none | done | Folder layout (+ `overlays/`) with READMEs, root README skeleton, MIT LICENSE, .gitignore, requirements files. Pushed to GitHub `main`. |
 | P0b | `docs/contracts.md` | Claude Code | P0 | done | docs/contracts.md (8 sections) + tools/contracts.py + tests/test_contracts.py (5 pass). UDP frame packet = 3,631 bytes, ts = integer Unix seconds. User accepted all 6 flagged defaults (F1–F6) at 13:05. |
 | U1 | First-hour checklist (BUILD_PLAN section 3) | You | none | todo | |
-| P1 | camfeed.py + HDMI check | Claude Code | P0 | in progress (13:07) | |
+| P1 | camfeed.py + HDMI check | Claude Code | P0 | blocked: plug laptop HDMI out → PYNQ HDMI IN, set that display to 1280×720 @ 60 Hz in Extend mode, run `python tools/camfeed.py --camera 1 --monitor N`, then on the board `bash device/run.sh device/hdmi_check.py` (device/README.md) | tools/camfeed.py (camera/clip, letterbox 1280×720, full screen, q/b/space), device/hdmi_check.py, device/run.sh, device/README.md. Laptop side tested: `--list` probes OK, letterbox and clip loop verified headless. Board run pending (board not reachable yet). |
 | P2 | Golden model + tests (spec v1 frozen at H5) | Claude Code | P0b | todo | |
 | U2 | Record the clip set + fill `testdata/labels.csv` | You | P1 | todo | |
 | P4 | AWS stack + IoT thing + device IAM | Codex | P0b | todo | |
@@ -58,6 +58,7 @@ Owners follow Case A in BUILD_PLAN.md section 8 (Vivado on the Codex machine). *
 - S3 bucket / DynamoDB table / SNS topic: 
 - PYNQ IP address: 
 - GitHub repo URL: https://github.com/sushant-mishra-dtu/Burnwatch (public, branch `main`)
+- Laptop cameras: OpenCV 4.13 (pip) opens webcams via Media Foundation only (DSHOW-by-index unsupported); indices 0 and 1 both deliver 1280×720 @ 30. Monitors without the PYNQ: 0 = 2560×1440 primary, 1 = 1920×1080.
 
 ## Plan changes
 <!-- One line each: date-time, what changed in PROMPTS.md / BUILD_PLAN.md, and why. -->
