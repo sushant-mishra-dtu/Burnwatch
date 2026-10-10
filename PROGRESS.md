@@ -49,7 +49,7 @@ Owners follow Case A in BUILD_PLAN.md section 8 (Vivado on the Codex machine). *
 | G1 | GaugeEye pivot (only if GATE-H8 says pivot) | Claude Code | GATE-H8 | skipped: not pivoting | |
 | Z1 | ZedBoard + VIO RTL package of the tile engine (pasted prompt, Cloud Labs) | Claude Code | P2 | done | `zedboard/burnwatch_zed_vio/` (+ `.zip`): Verilog-2001 Part A (pixels -> tile means) and Part B (score, gate, baselines), simulated-input generators, VIO top, xdc, create/build/sim Tcl, README. Bit-exact vs golden.py in simulation at 1280x720 (14 tests, every tile; Verilator + iverilog) and 4,000 random scorer vectors. Vivado build, timing and the board run are not done yet. |
 
-| RTL-SIM | Native Vivado scoring-core simulation (user request) | Codex | P2 | in progress (23:39) | User requested changes to M:/Vivado Projects/Burnwatch/Burnwatch; native core + golden-vector testbench installed, XSim verification running. Separate from P8/P9. |
+| RTL-SIM | Native Vivado scoring-core simulation (user request) | Codex | P2 | done | Installed native RTL + golden-vector testbench in M:/Vivado Projects/Burnwatch/Burnwatch, corrected tops/testbench usage; XSim 2022.1 passed 80 full 720p synthetic frames / 288,000 scores with zero mismatches, including baseline state. Standalone core only; P8/P9 and physical FPGA validation remain pending. |
 
 ## Facts
 <!-- Discovered values that later prompts need. Append-only. No secrets. -->
@@ -69,6 +69,8 @@ Owners follow Case A in BUILD_PLAN.md section 8 (Vivado on the Codex machine). *
 - Cloud verifier (from 10 Oct 16:24, user decision, supersedes the 13:56 Nemotron-only line): Claude `anthropic.claude-haiku-5-5` on the Bedrock **Mantle** endpoint in `ap-south-1` (docs list Mumbai with global routing; Mantle has no structured outputs). IAM action `bedrock-mantle:CreateInference`, currently on `Resource: '*'` because the resource ARN format could not be verified. Fallback: NVIDIA Nemotron (skipped when `NvidiaApiKey`/`NvidiaModelId` are empty), then Rekognition. Haiku 5.5 account access in ap-south-1: ___ (fill after cloud/bedrock_probe.py). `sam build` with `anthropic[bedrock]` (anthropic 1.13.0, Linux wheels) passes; build into a short path on Windows (MAX_PATH).
 - ZedBoard (Cloud Labs, from 10 Oct 17:47): part xc7z020clg484-1, GCLK Y9 LVCMOS33 100 MHz, LEDs T22 T21 U22 U21 V22 W22 U19 U14 (Digilent master XDC + BoardStore 2022.1 avnet zedboard 1.4). User's Vivado: 2022.1.
 
+- RTL-SIM (10 Oct 2026 23:49 IST): Vivado project M:/Vivado Projects/Burnwatch/Burnwatch/Burnwatch.xpr; native standalone core/testbench sources archived in overlays/rtl_sim. XSim PASS: 80 frames, 288000 scores, 0 mismatches, 928802 simulated cycles/frame at a 10 ns testbench clock. No synthesis/timing/board-FPS claim; AXI overlay is separate. Originals backed up in codex_backup_20261010_233428.
+
 ## Plan changes
 <!-- One line each: date-time, what changed in PROMPTS.md / BUILD_PLAN.md, and why. -->
 - 10 Oct 13:05, contracts F1–F6 (accepted by user): CLAUDE.md interface line → `step()` (F1); P2 Params in register order + range checks (F2), reset frame sets b = x before scoring (F4), and P2 now also writes tools/dump_golden.py (F6, moved from P8); P3 device obeys verdict.state (F3); P5 verdict adds camera/verifier/evidence, DynamoDB adds time_ist/verify_ms (F5); P6/P7 use tools/contracts.py + BWV1 verdict packet (F5); P4 may create the cloud/verify stub + cameras.json (F6).
@@ -86,3 +88,4 @@ Owners follow Case A in BUILD_PLAN.md section 8 (Vivado on the Codex machine). *
 - 13:23, P2, Claude Code: golden model + 19 tests, gen_header, dump_golden (synthetic set ready for Codex P8); F7 deadlock found and fixed (K_FAST=0 snap).
 - 13:43, P4 checkpoint, Codex: AWS template/setup scripts prepared; SAM lint/build and 14 mocked tests pass. Waiting for the prompt's required template/IAM approval before deploying, provisioning credentials or running live MQTT verification.
 - 17:47, Z1, Claude Code: ZedBoard VIO RTL package; bit-exact with golden.py in simulation (1280x720, all tiles); Vivado/board not run here.
+- 23:49, RTL-SIM, Codex: requested native Vivado project completed; 80 full-resolution synthetic frames bit-exact (scores + persisted state), 24 Python reference/contract tests pass, local report saved.
