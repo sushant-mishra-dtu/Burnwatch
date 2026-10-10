@@ -60,3 +60,29 @@ per-frame results. Simulated clock cycles are **not** physical board FPS.
 
 No HDMI capture, ARM/Linux execution, AWS communication or physical FPGA
 validation is included in this standalone scoring-core simulation.
+
+## Synthesis and timing reports
+
+Vivado 2022.1 can generate an unquoted incremental-checkpoint path when the
+project directory contains spaces. If `[Common 17-165]` mentions the checkpoint
+path, disable both automatic and manual incremental reuse on `synth_1`, reset
+that failed run, and synthesize again. The installer now saves those settings.
+Do not change or relocate the scoring source to address this configuration error.
+
+The supplied synthesis script also adds a 10 ns clock constraint and writes
+resource and timing reports. Run it from PowerShell:
+
+```powershell
+& "M:\amd_xilinx\Vivado\2022.1\bin\vivado.bat" -mode batch -source "M:\Vivado Projects\Burnwatch\Burnwatch\synthesize_project.tcl" -tclargs "M:\Vivado Projects\Burnwatch\Burnwatch\Burnwatch.xpr"
+```
+
+Inspect `synthesis_results/utilization.rpt` and `timing_summary.rpt`. This is
+post-synthesis timing, not post-route timing closure. The standalone memory and
+parameter ports are not a board pinout: physical deployment requires the planned
+AXI/PS wrapper and appropriate interface constraints. The reports must be assessed
+before claiming the complete design fits or runs at 100 MHz on the board.
+
+Synthesis results from the Vivado project are summarised in
+[SYNTHESIS_VALIDATION.md](SYNTHESIS_VALIDATION.md), with the raw reports in `reports/`.
+`implement_core_ooc.tcl` runs an out-of-context place-and-route of the core alone
+(no pinout, no bitstream); its results are not recorded here yet.

@@ -50,6 +50,8 @@ def main():
         f'open_project {{{project.as_posix()}}}\n'
         'set_property top tile_engine [get_filesets sources_1]\n'
         'set_property top_auto_set false [get_filesets sources_1]\n'
+        'set_property AUTO_INCREMENTAL_CHECKPOINT 0 [get_runs synth_1]\n'
+        'set_property INCREMENTAL_CHECKPOINT {} [get_runs synth_1]\n'
         'set_property top tb_tile_engine [get_filesets sim_1]\n'
         'set_property top_auto_set false [get_filesets sim_1]\n'
         'set_property used_in {simulation} [get_files *tb_tile_engine.sv]\n'
@@ -79,6 +81,7 @@ def main():
         encoding="ascii",
     )
     shutil.copy2(source_dir / "README.md", root / "README_LOCAL_SIM.md")
+    shutil.copy2(source_dir / "synthesize_project.tcl", root / "synthesize_project.tcl")
     print(f"Installed design: {design}")
     print(f"Installed testbench: {bench}")
     print(f"Originals backed up: {backup}")

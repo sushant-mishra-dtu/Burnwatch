@@ -34,13 +34,13 @@ Owners follow Case A in BUILD_PLAN.md section 8 (Vivado on the Codex machine). *
 | P4 | AWS stack + IoT thing + device IAM | Codex | P0b | waiting: approval of template + IAM policies before deployment | cloud/template.yaml, idempotent IoT/IAM scripts, MQTT smoke test, verifier stub/cameras.json and device/.env.example ready. SAM lint + Python 3.13 build pass; 14 mocked cloud tests pass. No AWS stack or credentials provisioned; need deployment approval, AlertEmail and verified BedrockRegion. |
 | P5 | Lambda verifier (Claude on Bedrock, Nemotron fallback) | Claude Code | P4 | todo | |
 | P3 | Regions, state machine, eval_clips, replay viewer | Claude Code | P2, U2 | todo | |
-| P8 | HLS tile engine, bit-exact C-sim | Codex | P2 | todo | |
+| P8 | HLS tile engine, bit-exact C-sim | Claude Code | P2 | todo | |
 | GATE-H8 | Go / pivot to GaugeEye | Claude Code | P3 | todo | |
 | P6 | Device runtime (A: cloud client, B: PYNQ loop) | Claude Code | P1, P3, P4, GATE-H8 | todo | |
-| P7 | Live viewer + fake_device | Claude Code | P0b, P3 | todo | |
-| P9 | Level-2 overlay + on-board bit-exact check | Codex | P8 | todo | |
+| P7 | Live viewer + fake_device | Codex | P0b, P3 | todo | |
+| P9 | Level-2 overlay + on-board bit-exact check | Claude Code | P8 | todo | |
 | R1 | Citable facts → `docs/sources.md` | GPT (Omnirush) | none | in progress (13:20) | Omnirush research pass started. |
-| P10 | Level-3 live integration (stretch, only if before ~H17) | Codex | P9 | todo | |
+| P10 | Level-3 live integration (stretch, only if before ~H17) | Claude Code | P9 | todo | |
 | GATE-H20 | PL cut decision | Claude Code | P6 | todo | Run at H20 even if P9 isn't done |
 | P11 | Benchmarks + final test table | Claude Code | P6, GATE-H20 | todo | |
 | P12 | README + architecture figure | Claude Code | P11, R1 | todo | |
@@ -51,11 +51,13 @@ Owners follow Case A in BUILD_PLAN.md section 8 (Vivado on the Codex machine). *
 
 | RTL-SIM | Native Vivado scoring-core simulation (user request) | Codex | P2 | done | Installed native RTL + golden-vector testbench in M:/Vivado Projects/Burnwatch/Burnwatch, corrected tops/testbench usage; XSim 2022.1 passed 80 full 720p synthetic frames / 288,000 scores with zero mismatches, including baseline state. Standalone core only; P8/P9 and physical FPGA validation remain pending. |
 
+| RTL-SYN | Fix native Vivado synthesis configuration | Codex | RTL-SIM | done | Fixed checkpoint-path parsing by disabling automatic/manual incremental reuse; added 10 ns clock and verified synth_1 completes. Reports: 12658 LUTs, 356 FF, 7 DSP, 0 BRAM; WNS -17.202 ns and 206/125 I/O. Hardware timing/pin fit still requires pipelining + AXI wrapper; RTL unchanged, prior XSim pass retained. |
+
 ## Facts
 <!-- Discovered values that later prompts need. Append-only. No secrets. -->
 - H0 (clock time): 12:56 IST, 10 Oct 2026 (when the user typed "start" in Claude Code; correct it if you started earlier)
-- Vivado/Vitis HLS machine (Case A/B): 
-- PYNQ image version / matching Vivado version: 
+- Vivado/Vitis HLS machine (Case A/B): **Case B**, this laptop (Claude Code). Vivado + Vitis HLS **2022.1** (SW Build 3526262) at `M:\amd_xilinx` (`Vivado\2022.1\bin\vivado.bat`, `Vitis_HLS\2022.1\bin\vitis_hls.bat`), not on PATH. Part `xc7z020clg400-1` present; PYNQ-Z2 board files **not installed** (needed before P9). WinPcap skipped (only for System Generator Ethernet co-sim).
+- PYNQ image version / matching Vivado version: Vivado 2022.1 matches PYNQ **v3.0.x**; board image version still to confirm (`cat /etc/os-release` or `pip show pynq` on the board).
 - Bedrock region serving `anthropic.claude-haiku-5-5`: 
 - IoT ATS endpoint: 
 - S3 bucket / DynamoDB table / SNS topic: 
@@ -80,6 +82,7 @@ Owners follow Case A in BUILD_PLAN.md section 8 (Vivado on the Codex machine). *
 - 10 Oct 13:56, verifier switched from Claude Haiku 5.5 on Bedrock to an NVIDIA Nemotron vision model (user decision). PROMPTS.md P4 (template params/env: NvidiaApiKey NoEcho, VerifierModelId, NimBaseUrl; Bedrock IAM removed), P5 (urllib call, probe first, strict JSON parse, verifier="nemotron"), P12/P13 wording; BUILD_PLAN sections 1, 2, 3, 5, 6, 8; CLAUDE.md; contracts.md verifier enum; tests/test_contracts.py. .gitignore now ignores samconfig.toml (it would hold AlertEmail and the key). **Codex: P4's template.yaml and cloud/README.md need reworking to match before deployment.**
 - 10 Oct 16:24, verifier is Claude on Bedrock again, with NVIDIA Nemotron as fallback (user decision): chain Claude → Nemotron → Rekognition, `verifier` enum now `claude`/`nemotron`/`rekognition`. Edited cloud/template.yaml (BedrockRegion removed, region = stack region; BedrockModelId, NvidiaApiKey NoEcho default "", NvidiaModelId default "", NimBaseUrl; IAM `bedrock-mantle:CreateInference` replaces `bedrock:InvokeModel`; timeout 60 → 90 s), cloud/README.md, cloud/verify/requirements.txt (anthropic[bedrock]), PROMPTS.md P4/P5/P12/P13, BUILD_PLAN sections 1, 2, 3, 6, 8, CLAUDE.md, contracts.md (verdict example/enum, verify_ms, F3), tests/test_contracts.py. The P4 template/IAM still needs the user's approval before deploying.
 - 10 Oct 17:47, user: PYNQ-Z2 is not used for now. Added row Z1 and `zedboard/`, a hand-written Verilog version of the tile engine with VIO control for a ZedBoard in IIIT-Delhi Cloud Labs (synthetic on-chip frames, no HDMI). P8/P9 (HLS + PYNQ overlay, Codex) are unchanged; Z1 matches the same spec, golden.py.
+- 10 Oct 17:50, Case B (user: Vivado installed on this laptop): P8, P9, P10 → Claude Code; P7 → Codex; P4 stays Codex (already its row).
 
 ## Log
 <!-- One line per finished task: HH:MM, ID, tool, one-line result. -->
@@ -89,3 +92,5 @@ Owners follow Case A in BUILD_PLAN.md section 8 (Vivado on the Codex machine). *
 - 13:43, P4 checkpoint, Codex: AWS template/setup scripts prepared; SAM lint/build and 14 mocked tests pass. Waiting for the prompt's required template/IAM approval before deploying, provisioning credentials or running live MQTT verification.
 - 17:47, Z1, Claude Code: ZedBoard VIO RTL package; bit-exact with golden.py in simulation (1280x720, all tiles); Vivado/board not run here.
 - 23:49, RTL-SIM, Codex: requested native Vivado project completed; 80 full-resolution synthetic frames bit-exact (scores + persisted state), 24 Python reference/contract tests pass, local report saved.
+- 00:20, RTL-SYN, Codex: fixed Common 17-165 configuration error, synth_1 Complete; saved resource/timing reports and documented clock/pin limitations.
+- 00:30, RTL-SYN files, Claude Code: copied Codex's finished synthesis results from the Vivado project into overlays/rtl_sim (SYNTHESIS_VALIDATION.md, reports/, implement_core_ooc.tcl). The OOC place-and-route was still running, so none of its results are included.

@@ -1,0 +1,2 @@
+BURNWATCH RTL PASS frames=80 tile_scores=288000 mismatches=0 max_cycles=928802
+Clock period: 10 ns. Simulated core cycles, not measured board throughput.
