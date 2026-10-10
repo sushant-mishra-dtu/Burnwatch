@@ -1,0 +1,5 @@
+BURNWATCH CORE OOC ROUTING COMPLETE
+Target device: xc7z020clg400-1; clock constraint: 10 ns
+Parent clock source assumption: BUFGCTRL_X0Y0
+Scoring RTL unchanged; module boundary routes and board pinout are not validated
+Timing closure must be assessed in timing_summary.rpt; no bitstream or board test

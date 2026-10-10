@@ -94,3 +94,4 @@ Owners follow Case A in BUILD_PLAN.md section 8 (Vivado on the Codex machine). *
 - 23:49, RTL-SIM, Codex: requested native Vivado project completed; 80 full-resolution synthetic frames bit-exact (scores + persisted state), 24 Python reference/contract tests pass, local report saved.
 - 00:20, RTL-SYN, Codex: fixed Common 17-165 configuration error, synth_1 Complete; saved resource/timing reports and documented clock/pin limitations.
 - 00:30, RTL-SYN files, Claude Code: copied Codex's finished synthesis results from the Vivado project into overlays/rtl_sim (SYNTHESIS_VALIDATION.md, reports/, implement_core_ooc.tcl). The OOC place-and-route was still running, so none of its results are included.
+- 00:50, RTL-OOC files, Claude Code: copied Codex's finished core-only OOC place-and-route results into overlays/rtl_sim (OOC_VALIDATION.md, reports/ooc_*, README section). All nets routed, 0 routing errors; setup WNS -20.092 ns at 100 MHz (fails).
