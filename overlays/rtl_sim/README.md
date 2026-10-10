@@ -84,5 +84,38 @@ before claiming the complete design fits or runs at 100 MHz on the board.
 
 Synthesis results from the Vivado project are summarised in
 [SYNTHESIS_VALIDATION.md](SYNTHESIS_VALIDATION.md), with the raw reports in `reports/`.
-`implement_core_ooc.tcl` runs an out-of-context place-and-route of the core alone
-(no pinout, no bitstream); its results are not recorded here yet.
+Measured core placement/routing results and remaining timing limits are in
+[OOC_VALIDATION.md](OOC_VALIDATION.md).
+
+## Core-only placement and routing
+
+The normal `impl_1` run treats every private frame/data/parameter connection as a
+package pin. That cannot fit this bare top: the reported 205 unplaced ports exceed
+125 available package sites. Assigning arbitrary pin locations cannot resolve it.
+A complete board design must connect these ports internally through the AXI/PS
+wrapper before ordinary top-level implementation can succeed.
+
+For isolated core analysis, use the documented Vivado UG905 module-analysis flow:
+
+```powershell
+& "M:\amd_xilinx\Vivado\2022.1\bin\vivado.bat" -mode batch -source "M:\Vivado Projects\Burnwatch\Burnwatch\implement_core_ooc.tcl" -tclargs "M:\Vivado Projects\Burnwatch\Burnwatch\Burnwatch.xpr"
+```
+
+This runs non-project synthesis with `-mode out_of_context`, then optimization,
+placement, physical optimization, routing and reports. It keeps the 10 ns target
+clock, assumes an external parent clock buffer at `BUFGCTRL_X0Y0`, and tags the
+module as an HD partition. Source RTL and algorithm parameters are unchanged.
+No I/O buffers, package pin constraints, bitstream or fake external tie-offs are
+added. This separate flow preserves the existing project and failed board-top
+run as evidence; it does not turn `impl_1` into a complete PYNQ overlay.
+
+Reports and reusable checkpoints are in `core_ooc_results`. Open
+`tile_engine_core_routed.dcp` in Vivado to inspect physical placement. In the
+Vivado Tcl console use `open_checkpoint {<absolute path to that file>}` after
+closing any currently open synthesized/implemented design. The module's
+boundary nets are intentionally not routed in the module-analysis flow unless
+parent-context partition-pin constraints are supplied. Therefore this analysis
+checks internal core placement/routing, not external interface timing or board
+connectivity. Check `timing_summary.rpt` separately: completing routing does not
+mean the 100 MHz target was met. Full-system integration needs the AXI wrapper,
+actual parent clock/interface constraints, pinout and a new implementation run.
