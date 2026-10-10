@@ -51,7 +51,7 @@ Owners follow Case A in BUILD_PLAN.md section 8 (Vivado on the Codex machine). *
 
 | RTL-SIM | Native Vivado scoring-core simulation (user request) | Codex | P2 | done | Installed native RTL + golden-vector testbench in M:/Vivado Projects/Burnwatch/Burnwatch, corrected tops/testbench usage; XSim 2022.1 passed 80 full 720p synthetic frames / 288,000 scores with zero mismatches, including baseline state. Standalone core only; P8/P9 and physical FPGA validation remain pending. |
 
-| RTL-SYN | Fix native Vivado synthesis configuration | Codex | RTL-SIM | in progress (00:18) | Investigating reported Common 17-165 checkpoint-path error; disabled incremental synthesis, added 10 ns clock constraint, synthesis retry running. |
+| RTL-SYN | Fix native Vivado synthesis configuration | Codex | RTL-SIM | done | Fixed checkpoint-path parsing by disabling automatic/manual incremental reuse; added 10 ns clock and verified synth_1 completes. Reports: 12658 LUTs, 356 FF, 7 DSP, 0 BRAM; WNS -17.202 ns and 206/125 I/O. Hardware timing/pin fit still requires pipelining + AXI wrapper; RTL unchanged, prior XSim pass retained. |
 
 ## Facts
 <!-- Discovered values that later prompts need. Append-only. No secrets. -->
@@ -92,4 +92,5 @@ Owners follow Case A in BUILD_PLAN.md section 8 (Vivado on the Codex machine). *
 - 13:43, P4 checkpoint, Codex: AWS template/setup scripts prepared; SAM lint/build and 14 mocked tests pass. Waiting for the prompt's required template/IAM approval before deploying, provisioning credentials or running live MQTT verification.
 - 17:47, Z1, Claude Code: ZedBoard VIO RTL package; bit-exact with golden.py in simulation (1280x720, all tiles); Vivado/board not run here.
 - 23:49, RTL-SIM, Codex: requested native Vivado project completed; 80 full-resolution synthetic frames bit-exact (scores + persisted state), 24 Python reference/contract tests pass, local report saved.
+- 00:20, RTL-SYN, Codex: fixed Common 17-165 configuration error, synth_1 Complete; saved resource/timing reports and documented clock/pin limitations.
 - 00:30, RTL-SYN files, Claude Code: copied Codex's finished synthesis results from the Vivado project into overlays/rtl_sim (SYNTHESIS_VALIDATION.md, reports/, implement_core_ooc.tcl). The OOC place-and-route was still running, so none of its results are included.
