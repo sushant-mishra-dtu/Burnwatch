@@ -23,7 +23,7 @@ TILE_FAST = 8                      # ARM-fast mode: rgb[::2, ::2] (640x360) inpu
 
 # (min, max) for each register field; None = no upper bound (caller-side fields only).
 _RANGES = {
-    "K_SLOW": (1, 15), "K_FAST": (1, 15),
+    "K_SLOW": (1, 15), "K_FAST": (0, 15),
     "W_EDGE": (0, 255), "W_GREY": (0, 255),
     "SCORE_SHIFT": (0, 31), "T_FLAG": (0, 255), "SAT_MAX": (0, 255),
     "SAT_TOL": (0, 65535), "T_GLOBAL": (0, 65535), "GATE_TILES": (0, N_TILES),
@@ -35,7 +35,7 @@ _RANGES = {
 class Params:
     """Tile-engine constants, in HLS register order. See detector/golden.py for how each one is used."""
     K_SLOW: int = 6             # baseline update shift on normal frames: b moves 1/64 of the way to x
-    K_FAST: int = 2             # shift after a gated frame: b moves 1/4 of the way (re-baseline fast)
+    K_FAST: int = 0             # shift after a gated frame; 0 snaps b = x (contracts.md F7: re-baseline at once)
     W_EDGE: int = 4             # weight of edge_drop (Q8) in the raw score
     W_GREY: int = 4             # weight of grey_shift (Q8) in the raw score
     SCORE_SHIFT: int = 8        # raw = (W_EDGE*edge_drop + W_GREY*grey_shift) >> SCORE_SHIFT

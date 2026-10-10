@@ -148,9 +148,12 @@ def test_4_global_brightness_gates_then_rebaselines_fast():
         f = jitter(bright, rng)
         _, gate, _ = eng.step(f)
         gaps.append(gate)
-        if prev_gate:                                         # after a gated frame every tile moves 1/4 of the way
+        if prev_gate:                                         # after a gated frame every tile re-baselines with K_FAST
             xY = (pixel_features(f)[0].reshape(45, T, 80, T).sum(axis=(1, 3)) >> 8) << 8
-            assert np.array_equal(eng.bY, before + ((xY - before + 2) >> 2))
+            k = P.K_FAST
+            assert np.array_equal(eng.bY, before + ((xY - before + ((1 << k) >> 1)) >> k))
+            if k == 0:
+                assert np.array_equal(eng.bY, xY)                 # default: snap (F7)
     assert gaps[-1] is False                                  # the gate releases within a few frames
 
 
@@ -226,6 +229,8 @@ def test_update_rounding_and_arithmetic_shift():
         (100, 102, 2, 101),      # (2 + 2) >> 2 = 1
         (101, 100, 2, 101),      # (-1 + 2) >> 2 = 0: stops 1 above x (round half up)
         (65280, 0, 1, 32640),    # (-65280 + 1) >> 1 = -32640
+        (300, 70000, 0, 70000),  # k = 0: rounding term (1 << 0) >> 1 = 0, so b snaps to x (F7)
+        (65280, 0, 0, 0),
     ]
     for b, x, k, want in cases:
         arr = np.array([[b]], np.int32)
@@ -259,7 +264,8 @@ def test_pixel_features_match_scalar_formulas():
 def test_params_validate_ranges_and_register_order():
     assert list(P.registers()) == [f.lower() for f in config.REGISTER_FIELDS]
     assert P.registers()["sat_tol"] == 1024 and P.registers()["t_global"] == 6144
-    for bad in (dict(K_SLOW=0), dict(K_FAST=16), dict(W_EDGE=256), dict(SCORE_SHIFT=32),
+    assert Params(K_FAST=0).K_FAST == 0 and P.K_FAST == 0          # F7: 0 is legal and the default
+    for bad in (dict(K_SLOW=0), dict(K_FAST=16), dict(K_FAST=-1), dict(W_EDGE=256), dict(SCORE_SHIFT=32),
                 dict(SAT_TOL=65536), dict(GATE_TILES=3601), dict(UPDATE_EVERY_PL=0)):
         with pytest.raises(ValueError):
             Params(**bad)
@@ -274,17 +280,24 @@ def test_geometry_matches_contracts():
     assert (config.TILES_X, config.TILES_Y, config.N_TILES) == (contracts.TILES_X, contracts.TILES_Y, contracts.N_TILES)
 
 
-@pytest.mark.xfail(strict=True, reason="spec v1 deadlock: after a global change the gate releases with a residual "
-                                       "gap that keeps tiles flagged, and flagged tiles are frozen (F7)")
-def test_global_change_recovers():
-    """'Lights on' in a dark scene: after a few frames the scene should score clean again."""
+SCENES = {"dark": dict(dark=(10, 31), light=(50, 71)), "mid": {}, "bright": dict(dark=(140, 180), light=(200, 236))}
+
+
+@pytest.mark.parametrize("scene", SCENES)
+@pytest.mark.parametrize("shift", [40, -40])
+def test_global_change_recovers(scene, shift):
+    """Lights on/off in a dark, mid or bright scene: clean again 2 frames later (F7).
+
+    With spec v1's K_FAST = 2, dark +40 and bright -40 left all 3600 tiles flagged and frozen for good."""
     rng = np.random.default_rng(6)
-    dark = textured_bg(dark=(10, 31), light=(50, 71))
-    lit = np.clip(dark.astype(np.int16) + 40, 0, 255).astype(np.uint8)
+    before = textured_bg(**SCENES[scene])
+    after = np.clip(before.astype(np.int16) + shift, 0, 255).astype(np.uint8)
     eng = TileEngine(P)
-    run(eng, [jitter(dark, rng) for _ in range(5)])
-    out = run(eng, [jitter(lit, rng) for _ in range(30)])
-    assert (out[-1][0] >= P.T_FLAG).sum() == 0
+    run(eng, [jitter(before, rng) for _ in range(5)])
+    out = run(eng, [jitter(after, rng) for _ in range(10)])
+    assert out[0][1]                                          # the change itself is gated
+    for scores, gate, _ in out[2:]:
+        assert not gate and (scores >= P.T_FLAG).sum() == 0
 
 
 # ---------------------------------------------------------------- heat map for docs/

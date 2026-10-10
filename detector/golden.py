@@ -84,8 +84,12 @@ def score_tiles(p, xE, xY, xS, mS, bE, bY, bS):
 
 
 def update_baseline(b, x, k, mask):
-    """b += (x - b + (1 << (k-1))) >> k on the tiles in mask, in place. Rounds half up; b stays in 0..65280."""
-    delta = (x - b + (1 << (k - 1))) >> k
+    """b += (x - b + ((1 << k) >> 1)) >> k on the tiles in mask, in place. Rounds half up; b stays in 0..65280.
+
+    The rounding term (1 << k) >> 1 is 1 << (k-1) for k >= 1, and 0 for k = 0, where the update snaps b = x
+    (K_FAST = 0, docs/contracts.md F7).
+    """
+    delta = (x - b + ((1 << k) >> 1)) >> k
     b += np.where(mask, delta, 0)
 
 
@@ -103,11 +107,14 @@ class TileEngine:
       4. Baseline update, unless this was a reset frame:
            if update_this_frame:
                k = K_FAST if prev_gate else K_SLOW
-               on tiles where (prev_gate or not flagged): b += (x - b + (1 << (k-1))) >> k
-         Flagged tiles are frozen so smoke isn't absorbed into the baseline; after a gated frame (a global
-         change: lights, exposure, camera bump) every tile re-baselines fast.
+               on tiles where (prev_gate or not flagged): b += (x - b + ((1 << k) >> 1)) >> k
+         Flagged tiles are frozen so smoke isn't absorbed into the baseline. After a gated frame (a global
+         change: lights, exposure, camera bump) every tile re-baselines with K_FAST; the default 0 snaps b = x,
+         because a partial re-baseline can leave the whole frame flagged and frozen for good (F7).
       5. prev_gate = gate.
-    The caller decides update_this_frame (frame_no % UPDATE_EVERY == 0) and ignores gated frames.
+    The caller decides update_this_frame (frame_no % UPDATE_EVERY == 0), ignores gated frames, and calls
+    reset() when a verdict says REJECTED (F7). Known limitation: anything in view at a reset frame that later
+    moves away leaves a "ghost" of frozen flagged tiles if the background is nearer mid-grey than it was.
     """
 
     def __init__(self, params=None, tile=16):

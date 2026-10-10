@@ -15,7 +15,7 @@
 
 // Register defaults, in register order (testbench only; the core takes them at run time)
 #define CFG_K_SLOW 6
-#define CFG_K_FAST 2
+#define CFG_K_FAST 0
 #define CFG_W_EDGE 4
 #define CFG_W_GREY 4
 #define CFG_SCORE_SHIFT 8
