@@ -1,0 +1,52 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Secrets: never committed
+.env
+*.pem
+*.key
+*.crt
+device/certs/
+
+# Big or regenerated test data
+testdata/clips/
+testdata/golden/
+*.npy
+
+# Device runtime output
+queue/
+recordings/
+
+# AWS SAM
+.aws-sam/
+samconfig.toml.bak
+
+# Vivado / Vitis HLS build outputs
+*.jou
+*.log
+*.str
+.Xil/
+hls/proj*/
+vivado/proj*/
+*.runs/
+*.cache/
+*.hw/
+*.ip_user_files/
+*.sim/
+*.gen/
+
+# Keep the final overlays trackable
+!overlays/*.bit
+!overlays/*.hwh
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

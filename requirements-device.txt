@@ -1,0 +1,3 @@
+# numpy and cv2 already ship with the PYNQ image; install only pure-Python deps here.
+paho-mqtt
+boto3

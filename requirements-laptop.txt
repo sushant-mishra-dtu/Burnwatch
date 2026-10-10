@@ -1,0 +1,7 @@
+numpy
+opencv-python
+mss
+screeninfo
+boto3
+paho-mqtt
+pytest
