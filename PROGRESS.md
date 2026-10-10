@@ -53,6 +53,8 @@ Owners follow Case A in BUILD_PLAN.md section 8 (Vivado on the Codex machine). *
 
 | RTL-SYN | Fix native Vivado synthesis configuration | Codex | RTL-SIM | done | Fixed checkpoint-path parsing by disabling automatic/manual incremental reuse; added 10 ns clock and verified synth_1 completes. Reports: 12658 LUTs, 356 FF, 7 DSP, 0 BRAM; WNS -17.202 ns and 206/125 I/O. Hardware timing/pin fit still requires pipelining + AXI wrapper; RTL unchanged, prior XSim pass retained. |
 
+| RTL-OOC | Standalone core placement/routing analysis | Codex | RTL-SYN | in progress (00:29) | Reported normal impl_1 maps private ports to package pins (205 unplaced / 125 sites). Running documented OOC module analysis with an explicit parent-clock assumption; physical wrapper/100 MHz closure remain separate. |
+
 ## Facts
 <!-- Discovered values that later prompts need. Append-only. No secrets. -->
 - H0 (clock time): 12:56 IST, 10 Oct 2026 (when the user typed "start" in Claude Code; correct it if you started earlier)
