@@ -11,7 +11,7 @@ Each step has a prompt in [PROMPTS.md](PROMPTS.md) (P0–P13). Open Claude Code 
 ## 1. What "done" means
 
 **The spine (must ship).** This is the video's money shot:
-> live camera → HDMI → PYNQ (ARM detector) → SUSPECT + amber LED → JPEG to S3 + event on IoT Core → Lambda → NVIDIA Nemotron (vision) → DynamoDB row + email on the phone → verdict back to the box → red LED (CONFIRMED)
+> live camera → HDMI → PYNQ (ARM detector) → SUSPECT + amber LED → JPEG to S3 + event on IoT Core → Lambda → Claude on Amazon Bedrock (vision; NVIDIA Nemotron fallback) → DynamoDB row + email on the phone → verdict back to the box → red LED (CONFIRMED)
 
 **The FPGA claim (ship at whatever ladder level is verified by H20):**
 
@@ -28,7 +28,7 @@ Level 2 is the realistic target. Level 3 means a base-overlay rebuild (several h
 ## 2. Changes from the brief (decisions already made)
 
 1. **MQTT client: `paho-mqtt` instead of `aws-iot-device-sdk-python-v2`.** That SDK needs `awscrt`, which likely has no prebuilt armv7l wheel, so pip could spend a long time compiling it on the Zynq. paho-mqtt is pure Python and works with IoT Core over 8883 with X.509 certificates.
-2. **Cloud verifier: NVIDIA Nemotron vision model on NVIDIA's hosted API** (OpenAI-compatible chat completions, `https://integrate.api.nvidia.com/v1`), called from Lambda with stdlib `urllib`. Changed from Claude Haiku 5.5 on Bedrock on 10 Oct (user decision). It must be a **vision** (VL) Nemotron: a text-only model cannot see the frame. Validate its JSON strictly; any parse failure falls back to Rekognition.
+2. **Cloud verifier: Claude Haiku 5.5 on Amazon Bedrock, with NVIDIA Nemotron as the fallback** (user decision, 10 Oct; it briefly was Nemotron-only from 13:56). Claude goes through the anthropic SDK's `AnthropicBedrockMantle` client in `ap-south-1` (the Mantle endpoint serves Mumbai with global routing), model `anthropic.claude-haiku-5-5`. Send no `temperature` (Haiku 5.5 400s on non-default sampling). The Mantle endpoint has **no structured outputs**, so both verifiers get a JSON-only instruction and one strict parser. Chain: Claude → Nemotron vision model on NVIDIA's hosted API (stdlib `urllib`, skipped when no key/model ID is set) → Rekognition `DetectLabels`.
 3. **The HLS tile engine reads frames from DDR over `m_axi`** rather than tapping the live AXI4-Stream. The same IP works at ladder Levels 2 and 3, can be debugged with plain C-sim, and has no backpressure or timing hazard on the video path.
 4. **Every constant is an AXI-Lite register.** Tuning thresholds never triggers a 20–60 min rebuild.
 5. **Baseline update is decimated** (`update_this_frame` flag). The ARM runs at ~3 fps and the PL at 60 fps, and both should forget the background over the same number of seconds.
@@ -44,7 +44,7 @@ Level 2 is the realistic target. Level 3 means a base-overlay rebuild (several h
 | # | Check | Why now | Pass |
 |---|---|---|---|
 | 1 | On the board: `python3 -c "import pynq; print(pynq.__version__)"`. Is the **matching** Vivado + Vitis HLS installed? (PYNQ 3.0.x ↔ 2022.1, PYNQ 3.1 ↔ 2024.1; confirm in the PYNQ release notes) | A Vivado download is tens of GB. **Start it now** if it is missing | Version noted in CLAUDE.md |
-| 2 | NVIDIA API key for the Nemotron vision model: put it in the git-ignored `cloud/.env` as `NVIDIA_API_KEY=...` (never in chat or a committed file). `cloud/nim_probe.py` confirms the model ID and image format | Free-tier rate limits apply | One probe call returns valid JSON for a sample frame |
+| 2 | Bedrock console (`ap-south-1`) → Model access → Claude Haiku 5.5 enabled? Submit the Anthropic use-case form if asked. Optional fallback: NVIDIA API key in the git-ignored `cloud/.env` as `NVIDIA_API_KEY=...` (never in chat or a committed file) | Model access approval can take a while | `cloud/bedrock_probe.py` returns valid JSON for a sample frame (and `cloud/nim_probe.py` if the key exists) |
 | 3 | Laptop → PYNQ **HDMI IN**, laptop display set to 1280×720 @ 60 Hz, Extend mode. In Jupyter: base overlay, `hdmi_in.configure()`, `readframe()` | Everything depends on it. `configure()` hangs if there is no lock | A frame shows in Jupyter |
 | 4 | PYNQ online: `date` is correct and `curl -I https://aws.amazon.com` works | **The Z2 has no RTC battery.** A wrong clock breaks TLS to IoT Core and S3 signatures with confusing errors | Both OK |
 | 5 | Phone as webcam (DroidCam or Phone Link) shows up as a camera on the laptop | Ingest | Visible in the Camera app |
@@ -97,7 +97,8 @@ Tracks for a team of three: **D** = detector owner, **C** = cloud and story owne
 | If… | Then |
 |---|---|
 | HDMI won't lock | 1280×720 @ 60 Hz; try another cable; Extend vs Duplicate; disable HDR/variable refresh. Last resort: phone stream → ARM over Wi-Fi (weaker FPGA story) |
-| The NVIDIA API is down, rate-limited or the key is rejected | Rekognition `DetectLabels` (already wired as the fallback in P5); the verdict says `verifier: rekognition` |
+| Bedrock refuses the model (no access yet) or is throttled | The Lambda falls through to Nemotron, then Rekognition, on its own; the verdict's `verifier` field says which one answered. To fix access, switch `BedrockModelId` to `anthropic.claude-sonnet-5` or `anthropic.claude-haiku-4-5` (open to all Bedrock customers) |
+| The NVIDIA API is down, rate-limited or the key is rejected | Rekognition `DetectLabels` (already wired as the last fallback in P5); the verdict says `verifier: rekognition` |
 | `sam build` fails on Windows | The Lambda runtime must match your local Python (3.10–3.13), or use `sam build --use-container` |
 | Device can't reach IoT Core | Check the clock first, then the endpoint (`iot:Data-ATS`), cert/policy attachment, and that the client ID matches the policy |
 | Smoke too faint | Closer framing, more sticks, darker textured background, daylight. Lower `T_FLAG` through the register, with no rebuild |
@@ -148,7 +149,7 @@ GitHub is the only channel between machines. Push P0 and P0b first; the other de
 | P2 | H3 | D | Golden model (the spec) + tests |
 | P3 | H5 | D | Regions, state machine, clip evaluator, replay viewer |
 | P4 | H1 | C | AWS stack (SAM) + IoT thing + device IAM |
-| P5 | H3 | C | Lambda verifier (NVIDIA Nemotron) |
+| P5 | H3 | C | Lambda verifier (Claude on Bedrock, Nemotron fallback) |
 | P6 | H5/H8 | C+D | Device runtime (cloud client + capture loop) |
 | P7 | H8 | C | Live viewer on the laptop |
 | P8 | H5 | F | HLS tile engine + bit-exact testbench |

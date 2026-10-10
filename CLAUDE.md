@@ -1,6 +1,6 @@
 # BurnWatch: context for every Claude Code session
 
-**What it is:** an FPGA-accelerated open-burning smoke detector. Phone camera → laptop (stands in for a CCTV DVR's HDMI output) → HDMI → PYNQ-Z2. The PL (FPGA) turns each 1280×720 frame into 3,600 tile smoke scores (80×45 tiles of 16×16 px). The ARM (Python) runs the region and state logic. AWS Lambda checks each suspect frame with an NVIDIA Nemotron vision model (NVIDIA's hosted API), logs it and sends an email alert. Only one JPEG per event leaves the box.
+**What it is:** an FPGA-accelerated open-burning smoke detector. Phone camera → laptop (stands in for a CCTV DVR's HDMI output) → HDMI → PYNQ-Z2. The PL (FPGA) turns each 1280×720 frame into 3,600 tile smoke scores (80×45 tiles of 16×16 px). The ARM (Python) runs the region and state logic. AWS Lambda checks each suspect frame with Claude on Amazon Bedrock (an NVIDIA Nemotron vision model is the fallback), logs it and sends an email alert. Only one JPEG per event leaves the box.
 
 **Event:** Environmental Hacks 2026, build window 8–11 Oct 2026. Judges watch a video of 3 minutes or less and read the public repo. One working feature beats five half-done ones.
 
@@ -29,5 +29,5 @@ docs/       architecture figure, results.md
 - Secrets (`*.pem`, `*.key`, `.env`, `device/certs/`) are never committed.
 - Honest claims only. Do not claim "ML", "AI on the edge", "low power" or "regulatory-grade". Every number in the README comes from a script in this repo.
 - The ARM-only pipeline must keep working end to end. The PL is an accelerator swapped in behind the same interface (`TileEngine.step(rgb, update_this_frame) -> (scores[45,80], gate, changed)`, see `docs/contracts.md` section 6).
-- AWS region `ap-south-1` for everything. The verifier calls NVIDIA's hosted API; its key is the NoEcho SAM parameter `NvidiaApiKey` (Lambda env `NVIDIA_API_KEY`) and lives only in the git-ignored `cloud/.env`.
+- AWS region `ap-south-1` for everything, Bedrock included (Mantle endpoint, `anthropic.claude-haiku-5-5`). The fallback verifier calls NVIDIA's hosted API; its key is the NoEcho SAM parameter `NvidiaApiKey` (Lambda env `NVIDIA_API_KEY`) and lives only in the git-ignored `cloud/.env`.
 - Keep it small. Before adding a dependency, a service or an abstraction, ask whether the 3-minute video needs it.

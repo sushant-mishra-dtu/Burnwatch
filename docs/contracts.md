@@ -10,7 +10,7 @@ Taken from CLAUDE.md and PROMPTS.md (P2–P8). Items marked **⚑F*n*** were con
 |---|---|---|---|
 | F1 | The engine interface is `score_frame(rgb) -> scores, gate` in CLAUDE.md but `step(rgb, update_this_frame=True) -> (scores, gate, changed)` in P2, P6 and P9 | CLAUDE.md vs P2/P6/P9 | Use `step()`. Update the line in CLAUDE.md |
 | F2 | P0b asks for "registers in the same order as Params", but P8 lists `k_slow, k_fast` first while P2 lists `K_SLOW, K_FAST` after `GATE_TILES` | P0b vs P2/P8 | Put the `Params` fields in P8's register order. This changes nothing functionally |
-| F3 | Who decides CONFIRMED vs REJECTED? The Lambda sends `state` using its `CONF_THRESHOLD`, while the device's P3 rule is "is_smoke and confidence ≥ 0.6 → CONFIRMED, not is_smoke → REJECTED". With `is_smoke=true, confidence<0.6`, the Lambda says REJECTED, but P3 has no transition, so the device stays SUSPECT | P3 vs P5 | **The device obeys `verdict.state`.** The single threshold is `CONF_THRESHOLD` in the cloud. If both Bedrock and Rekognition fail, the Lambda sends no verdict and the device's 90 s timeout handles it |
+| F3 | Who decides CONFIRMED vs REJECTED? The Lambda sends `state` using its `CONF_THRESHOLD`, while the device's P3 rule is "is_smoke and confidence ≥ 0.6 → CONFIRMED, not is_smoke → REJECTED". With `is_smoke=true, confidence<0.6`, the Lambda says REJECTED, but P3 has no transition, so the device stays SUSPECT | P3 vs P5 | **The device obeys `verdict.state`.** The single threshold is `CONF_THRESHOLD` in the cloud. If Claude, Nemotron and Rekognition all fail, the Lambda sends no verdict and the device's 90 s timeout handles it |
 | F4 | What does a **reset frame** score against? P2 lists `if reset: b = x` in the update block, after scoring, so frame 0 is scored against whatever baseline is left in memory. In csim that is zeros, but on the board it is BRAM left over from the previous run, so P9's on-board check would fail on frame 0 of every vector set after the first | P2 / P8 / P9 | **On a reset frame, set `b = x` first, then score.** That gives scores = 0, changed = 0, gate = False, prev_gate = False, whatever the previous state was |
 | F5 | P7's viewer shows "the last verdict text", but P6's UDP packet carries no verdict | P6 vs P7 | Add a second UDP packet, `BWV1` + verdict JSON, which the device sends once per verdict (section 5), and add `camera`, `verifier` and `evidence` to the verdict JSON (section 2) |
 | F6 | Folder ownership (BUILD_PLAN section 8): P4 (Codex) writes the stub `cloud/verify/app.py` and `cloud/verify/cameras.json`, but `cloud/verify/` belongs to Claude Code. P8 (Codex) writes `tools/dump_golden.py`, but `tools/` belongs to Claude Code | BUILD_PLAN section 8 vs P4/P8 | Codex creates the two `cloud/verify/` files in P4, and Claude Code owns them from P5 on. **Claude Code writes `tools/dump_golden.py` at the end of P2**, because it is coupled to golden.py and P8 can't start before P2 anyway. Codex only runs it |
@@ -66,7 +66,7 @@ The Lambda is triggered by S3, not by this message. The event exists for the IoT
 
 ### Verdict (Lambda → `burnwatch/<camera>/verdict`)
 ```json
-{"camera":"rwa-gate-2","ts":1791622800,"is_smoke":true,"confidence":0.86,"likely_source":"leaf or biomass burning","state":"CONFIRMED","verifier":"nemotron","evidence":"A grey plume rises from a pile of leaves at the left of the box."}
+{"camera":"rwa-gate-2","ts":1791622800,"is_smoke":true,"confidence":0.86,"likely_source":"leaf or biomass burning","state":"CONFIRMED","verifier":"claude","evidence":"A grey plume rises from a pile of leaves at the left of the box."}
 ```
 | Field | Type | Meaning |
 |---|---|---|
@@ -76,7 +76,7 @@ The Lambda is triggered by S3, not by this message. The event exists for the IoT
 | `confidence` | number | 0–1, 2 decimals |
 | `likely_source` | string | one of: `open waste burning`, `leaf or biomass burning`, `incense or small flame`, `cooking or tandoor`, `vehicle exhaust`, `steam or fog`, `dust`, `not smoke`, `unclear` |
 | `state` | string | `"CONFIRMED"` if `is_smoke and confidence >= CONF_THRESHOLD`, else `"REJECTED"`. **The device obeys this field** (⚑F3) |
-| `verifier` | string | `"nemotron"` or `"rekognition"` (⚑F5 addition; was `"claude"` until 10 Oct 13:56) |
+| `verifier` | string | `"claude"`, `"nemotron"` or `"rekognition"`: whichever produced the verdict, tried in that order (⚑F5 addition; `"nemotron"` added 10 Oct) |
 | `evidence` | string | one sentence, as stored in DynamoDB (⚑F5 addition; the viewer shows it) |
 
 `complaint_text` is **not** sent to the device. It only goes to DynamoDB and the email.
@@ -121,9 +121,9 @@ The Lambda is triggered by S3, not by this message. The event exists for the IoT
 | `likely_source` | S | one of the enum values |
 | `evidence` | S | one sentence |
 | `complaint_text` | S | draft complaint, or `""` |
-| `verifier` | S | `nemotron` or `rekognition` |
+| `verifier` | S | `claude`, `nemotron` or `rekognition` |
 | `latency_ms` | N | Lambda "now" just before PutItem, minus the S3 event record's `eventTime` |
-| `verify_ms` | N | the Nemotron (or Rekognition) call alone (◇) |
+| `verify_ms` | N | the call of the verifier that produced the verdict, alone (◇) |
 
 With boto3's resource API, numbers must be `Decimal` (`Decimal(str(x))`), not float.
 

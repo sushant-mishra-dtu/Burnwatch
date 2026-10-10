@@ -1,7 +1,8 @@
 # BurnWatch AWS setup (P4)
 
-All resources run in `ap-south-1`; Bedrock uses the separately verified
-`BedrockRegion`. The Lambda is a P4 stub until Claude Code completes P5.
+All resources run in `ap-south-1`, Bedrock included. The verifier is Claude on
+Bedrock, with an NVIDIA Nemotron fallback and Rekognition as the last resort.
+The Lambda is a P4 stub until Claude Code completes P5.
 Uploading a JPEG now raises an explicit error; it does not produce a verdict.
 
 ## Review checkpoint
@@ -16,7 +17,7 @@ before deployment or credential provisioning. The exact policies are in
 | Verifier Lambda | `dynamodb:PutItem` | `burnwatch-events` |
 | Verifier Lambda | `sns:Publish` | `burnwatch-alerts` |
 | Verifier Lambda | `iot:Publish` | `burnwatch/*/verdict` in this account/region |
-| Verifier Lambda | `bedrock:InvokeModel` | Configured foundation model in `BedrockRegion` |
+| Verifier Lambda | `bedrock-mantle:CreateInference` | `*` (resource-level ARN format not yet verified; tighten after review) |
 | Verifier Lambda | `rekognition:DetectLabels` | `*` (the API has no resource-level scope) |
 | Verifier Lambda | CloudWatch log creation/writes | SAM's generated basic execution role |
 | IoT certificate | `iot:Connect` | `client/burnwatch-*` |
@@ -24,15 +25,15 @@ before deployment or credential provisioning. The exact policies are in
 | IoT certificate | `iot:Subscribe` | `topicfilter/burnwatch/*` |
 | IAM user `burnwatch-device` | `s3:PutObject` only | Stack bucket's `frames/*` |
 
-The non-streaming `AnthropicBedrock.messages.create()` integration uses
-`InvokeModel`; its IAM action is **`bedrock:InvokeModel`**:
-[Anthropic Bedrock client](https://platform.claude.com/docs/en/build-with-claude/claude-on-amazon-bedrock-legacy)
-and [AWS InvokeModel permission](https://docs.aws.amazon.com/bedrock/latest/APIReference/API_runtime_InvokeModel.html).
-No streaming, `bedrock-mantle` permission, alternate model ID, or sampling
-parameters are added here. The default remains `anthropic.claude-haiku-5-5`.
-Model/region availability and account access must be verified before deployment.
-An inference profile needs a reviewed policy change; the current policy targets
-the configured direct foundation model.
+The verifier calls Claude through the anthropic SDK's `AnthropicBedrockMantle`
+client, which signs requests to `https://bedrock-mantle.ap-south-1.api.aws/anthropic/v1/messages`.
+That endpoint authorizes **`bedrock-mantle:CreateInference`**
+([Claude in Amazon Bedrock](https://platform.claude.com/docs/en/build-with-claude/claude-in-amazon-bedrock),
+[AWS bedrock-mantle permissions](https://docs.aws.amazon.com/bedrock/latest/userguide/inference-responses-api.html)).
+`ap-south-1` is served with global routing. The default model is
+`anthropic.claude-haiku-5-5`; enable it under Bedrock → Model access before
+deploying. The Nemotron fallback is plain HTTPS to NVIDIA and needs no IAM; leave
+`NvidiaApiKey`/`NvidiaModelId` empty to skip it.
 
 **The saved IAM user key is a hackathon shortcut.** Production should use the
 IoT credentials provider with a role alias for temporary upload credentials.
@@ -87,9 +88,11 @@ sam deploy --guided --region ap-south-1
 ```
 
 For guided deployment use stack name `burnwatch`, region `ap-south-1`, your
-`AlertEmail`, the Bedrock region tested in the console, model ID
-`anthropic.claude-haiku-5-5`, confidence threshold `0.6`, and the ATS hostname
-printed above as `IotEndpoint`. Allow SAM to create the Lambda IAM role
+`AlertEmail`, model ID `anthropic.claude-haiku-5-5`, confidence threshold `0.6`,
+and the ATS hostname printed above as `IotEndpoint`. Leave `NvidiaApiKey` empty
+in the guided prompt (and decline saving it); pass it only on the command line,
+`sam deploy --parameter-overrides NvidiaApiKey=... NvidiaModelId=...`, so it never
+lands in `samconfig.toml`. Allow SAM to create the Lambda IAM role
 (`CAPABILITY_IAM`), review the changeset, then save configuration for later runs.
 Subsequent deployments use `sam build --template-file cloud/template.yaml`
 followed by `sam deploy --region ap-south-1`.
@@ -144,5 +147,5 @@ does not mean that email delivery is ready.
    `verdict`. Only `frames/*.jpg` uploads trigger verification; the MQTT event
    message itself does not invoke Lambda.
 
-The smoke test checks real MQTT delivery. SNS email, Bedrock verification and
+The smoke test checks real MQTT delivery. SNS email, Claude/Nemotron verification and
 an S3 event are checked after P5/P6, rather than reported as passing from mocks.

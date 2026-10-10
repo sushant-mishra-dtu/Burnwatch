@@ -7,15 +7,24 @@ Parameters:
     Type: String
     AllowedPattern: '^[^\s@]+@[^\s@]+\.[^\s@]+$'
     Description: Confirm the SNS subscription sent to this email address.
-  BedrockRegion:
-    Type: String
-    AllowedPattern: '^[a-z]{2}(-[a-z]+)+-[0-9]+$'
-    Description: Region where the model has been verified in the Bedrock console.
   BedrockModelId:
     Type: String
     Default: anthropic.claude-haiku-5-5
     AllowedPattern: '^anthropic\.[a-zA-Z0-9.:-]+$'
-    Description: Direct foundation-model ID; inference profiles need a policy review.
+    Description: Claude model on the Bedrock Mantle endpoint in this region (primary verifier).
+  NvidiaApiKey:
+    Type: String
+    NoEcho: true
+    Default: ''
+    Description: Fallback verifier key. Pass with --parameter-overrides; never save it in samconfig.toml. Empty skips Nemotron.
+  NvidiaModelId:
+    Type: String
+    Default: ''
+    Description: Nemotron vision model ID confirmed by cloud/nim_probe.py. Empty skips Nemotron.
+  NimBaseUrl:
+    Type: String
+    Default: https://integrate.api.nvidia.com/v1
+    AllowedPattern: '^https://[^\s]+$'
   ConfidenceThreshold:
     Type: Number
     Default: 0.6
@@ -86,14 +95,18 @@ Resources:
       CodeUri: verify/
       Handler: app.lambda_handler
       Runtime: python3.13
-      Timeout: 60
+      # Worst case: Claude, then Nemotron, then Rekognition.
+      Timeout: 90
       MemorySize: 512
       Environment:
         Variables:
           TABLE: !Ref EventsTable
           TOPIC_ARN: !Ref AlertsTopic
-          BEDROCK_REGION: !Ref BedrockRegion
+          BEDROCK_REGION: !Ref AWS::Region
           MODEL_ID: !Ref BedrockModelId
+          NVIDIA_API_KEY: !Ref NvidiaApiKey
+          NVIDIA_MODEL_ID: !Ref NvidiaModelId
+          NIM_BASE_URL: !Ref NimBaseUrl
           CONF_THRESHOLD: !Ref ConfidenceThreshold
           IOT_ENDPOINT: !Ref IotEndpoint
           BUCKET: !Sub 'burnwatch-frames-${AWS::AccountId}-${AWS::Region}'
@@ -120,10 +133,12 @@ Resources:
               Effect: Allow
               Action: rekognition:DetectLabels
               Resource: '*'
-            - Sid: InvokeConfiguredClaude
+            - Sid: InvokeClaudeOnMantle
               Effect: Allow
-              Action: bedrock:InvokeModel
-              Resource: !Sub 'arn:${AWS::Partition}:bedrock:${BedrockRegion}::foundation-model/${BedrockModelId}'
+              # AnthropicBedrockMantle -> bedrock-mantle.<region>.api.aws/anthropic/v1/messages.
+              # Resource-level ARN format for this action is not yet verified, hence '*'.
+              Action: bedrock-mantle:CreateInference
+              Resource: '*'
       Events:
         FrameCreated:
           Type: S3

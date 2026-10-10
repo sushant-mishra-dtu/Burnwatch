@@ -197,13 +197,13 @@ Then run eval_clips.py on whatever clips are in testdata/clips/ and show me the 
 ````text
 Create the AWS infrastructure for BurnWatch in cloud/ using AWS SAM (template.yaml) plus small Python setup scripts (the laptop runs Windows: no bash-only scripts). Region ap-south-1.
 
-template.yaml (parameters: AlertEmail, NvidiaApiKey (NoEcho: pass it with --parameter-overrides at deploy time and never save it in samconfig.toml), VerifierModelId (the Nemotron vision model ID recorded in PROGRESS.md Facts), NimBaseUrl default "https://integrate.api.nvidia.com/v1", ConfidenceThreshold default 0.6):
+template.yaml (parameters: AlertEmail, BedrockModelId default "anthropic.claude-haiku-5-5", NvidiaApiKey (NoEcho, default "": pass it with --parameter-overrides at deploy time and never save it in samconfig.toml), NvidiaModelId default "" (the Nemotron vision model ID recorded in PROGRESS.md Facts), NimBaseUrl default "https://integrate.api.nvidia.com/v1", ConfidenceThreshold default 0.6, IotEndpoint). An empty NvidiaApiKey or NvidiaModelId means the Nemotron fallback is skipped:
 - S3 bucket for frames. Lifecycle rule deletes frames/ after 7 days. Block all public access. ObjectCreated notification on prefix frames/ suffix .jpg → VerifyFunction.
 - DynamoDB table burnwatch-events: PK camera (S), SK ts (N), on-demand billing.
 - SNS topic burnwatch-alerts with an email subscription to AlertEmail.
-- VerifyFunction (Python; runtime must match the local Python version used by `sam build` — check `python --version`), timeout 60 s, memory 512 MB, CodeUri verify/ relative to cloud/template.yaml (resolves to cloud/verify/; handler only stubbed here; P5 fills it in).
-  Env: TABLE, TOPIC_ARN, NVIDIA_API_KEY, NIM_BASE_URL, MODEL_ID, CONF_THRESHOLD, IOT_ENDPOINT (parameter), BUCKET.
-  IAM: s3:GetObject on the bucket, dynamodb:PutItem on the table, sns:Publish on the topic, iot:Publish on topic/burnwatch/*/verdict, rekognition:DetectLabels. No Bedrock permission: the verifier calls NVIDIA's hosted API over HTTPS.
+- VerifyFunction (Python; runtime must match the local Python version used by `sam build` — check `python --version`), timeout 90 s (Claude, then Nemotron, then Rekognition in the worst case), memory 512 MB, CodeUri verify/ relative to cloud/template.yaml (resolves to cloud/verify/; handler only stubbed here; P5 fills it in).
+  Env: TABLE, TOPIC_ARN, BEDROCK_REGION (= AWS::Region, ap-south-1), MODEL_ID, NVIDIA_API_KEY, NVIDIA_MODEL_ID, NIM_BASE_URL, CONF_THRESHOLD, IOT_ENDPOINT (parameter), BUCKET.
+  IAM: s3:GetObject on the bucket, dynamodb:PutItem on the table, sns:Publish on the topic, iot:Publish on topic/burnwatch/*/verdict, rekognition:DetectLabels, bedrock-mantle:CreateInference (the AnthropicBedrockMantle client calls https://bedrock-mantle.<region>.api.aws/anthropic/v1/messages). NVIDIA's API needs no IAM: it is plain HTTPS with the key.
 - Outputs: bucket name, table name, topic ARN.
 
 cloud/setup_iot.py (boto3; idempotent, safe to re-run):
@@ -232,27 +232,33 @@ Before deploying: show me the template and the IAM policies and wait for my OK. 
 
 ---
 
-## P5: Lambda verifier with NVIDIA Nemotron (H3, C)
+## P5: Lambda verifier: Claude on Bedrock, NVIDIA Nemotron fallback (H3, C)
 
 ````text
-Implement cloud/verify/app.py, the S3-triggered verifier. Read cloud/template.yaml and cloud/README.md first.
+Implement cloud/verify/app.py, the S3-triggered verifier. Read cloud/template.yaml and cloud/README.md first. Use the claude-api skill for the Bedrock client details.
 
 Flow per S3 ObjectCreated event (key frames/<camera>/<ts>.jpg):
 1. head_object → metadata set by the device (x-amz-meta-): camera, ts, score, tiles, bbox (JSON string). get_object → JPEG bytes.
-2. Call the NVIDIA Nemotron vision model on NVIDIA's hosted API: OpenAI-compatible chat completions at NIM_BASE_URL, model MODEL_ID (recorded in PROGRESS.md Facts), key NVIDIA_API_KEY. Use stdlib urllib (no SDK), timeout 30 s, temperature 0, max_tokens 1024.
-   - First, cloud/nim_probe.py makes one call from the laptop (key read from the git-ignored cloud/.env, never printed or logged) to confirm: the model accepts a base64 JPEG and in which form (OpenAI image_url data URL or an inline <img> tag), and whether it honours response_format json_schema. Record the answers under Facts.
-   - Image first, then the text prompt below.
-   - Ask for JSON (response_format json_schema if the probe showed it works, otherwise a JSON-only instruction) with exactly these required fields, no others:
+2. Primary: Claude on Amazon Bedrock through the anthropic Python SDK's Mantle client: AnthropicBedrockMantle(aws_region=BEDROCK_REGION), model MODEL_ID (anthropic.claude-haiku-5-5), timeout 20 s, max_retries 1.
+   - First, cloud/bedrock_probe.py makes one call from the laptop with a sample JPEG to confirm model access in ap-south-1 and that the reply parses. If Haiku 5.5 is not enabled for the account, ask me before switching BedrockModelId (anthropic.claude-sonnet-5 and anthropic.claude-haiku-4-5 are open to all Bedrock customers). Record the answer under Facts.
+   - Image (base64 JPEG content block) first, then the text prompt below.
+   - The Mantle endpoint does NOT support structured outputs: ask for JSON with a JSON-only instruction and parse strictly (below).
+   - Do NOT send temperature/top_p/top_k: Claude Haiku 5.5 rejects non-default sampling parameters with a 400. output_config effort "low", max_tokens 2048 (adaptive thinking is on by default and counts against it).
+   - Check stop_reason before reading content: only "end_turn" is a success; "refusal" and "max_tokens" are failed verifications. Read the first content block whose type is "text" (thinking blocks come first).
+3. Fallback 1: if Claude fails (SDK error, timeout, bad stop_reason, parse failure) and NVIDIA_API_KEY and NVIDIA_MODEL_ID are both set: the NVIDIA Nemotron vision model on NVIDIA's hosted API. OpenAI-compatible chat completions at NIM_BASE_URL, model NVIDIA_MODEL_ID, key NVIDIA_API_KEY. Use stdlib urllib (no SDK), timeout 20 s, temperature 0, max_tokens 1024.
+   - cloud/nim_probe.py makes one call from the laptop (key read from the git-ignored cloud/.env, never printed or logged) to confirm the model ID, that it accepts a base64 JPEG and in which form (OpenAI image_url data URL or an inline <img> tag). Record the answers under Facts. If no key is available yet, skip the probe and leave NvidiaModelId empty; the fallback is then skipped.
+   - Same prompt, same JSON-only instruction, same strict parser. A finish_reason other than "stop" or an HTTP error counts as a failed verification.
+   Fallback 2: if Nemotron also fails or is skipped: Rekognition DetectLabels (MinConfidence 60). is_smoke = any label named Smoke; confidence = that label's confidence/100; likely_source "unclear"; evidence lists the top labels; complaint_text "".
+   Record verifier = "claude", "nemotron" or "rekognition" (whichever produced the verdict), and log one line per failed stage with the reason (never the key).
+   Strict JSON parser (shared by Claude and Nemotron): strip any <think>...</think> block and ``` fences, then reject missing or extra fields, wrong types, confidence outside 0-1 and unknown likely_source values. Required fields, no others:
        is_smoke (boolean), confidence (number 0–1),
        likely_source (enum: "open waste burning", "leaf or biomass burning", "incense or small flame", "cooking or tandoor", "vehicle exhaust", "steam or fog", "dust", "not smoke", "unclear"),
        evidence (string, one sentence), complaint_text (string)
-   - Parse strictly: strip any <think>...</think> block and ``` fences, then reject missing or extra fields, wrong types, confidence outside 0-1 and unknown likely_source values. A finish_reason other than "stop", an HTTP error or a parse failure all count as a failed verification.
-3. If the Nemotron call fails: fall back to Rekognition DetectLabels (MinConfidence 60). is_smoke = any label named Smoke; confidence = that label's confidence/100; likely_source "unclear"; evidence lists the top labels; complaint_text "". Record verifier="rekognition" vs "nemotron".
 4. PutItem to DynamoDB: camera, ts, time_ist, score, tiles, bbox, s3_key, is_smoke, confidence, likely_source, evidence, complaint_text, verifier, latency_ms, verify_ms (types and definitions: docs/contracts.md section 4).
 5. If is_smoke and confidence >= CONF_THRESHOLD: SNS publish.
    Subject: "BurnWatch: possible open burning at <camera name>".
    Body: time (IST), camera name + address (cameras.json), likely source, evidence, a presigned GET URL for the photo (expires in 12 h), and the complaint draft under the heading "DRAFT – review before you submit it to your RWA or municipal helpline. Nothing has been sent automatically."
-6. Publish the verdict to IoT topic burnwatch/<camera>/verdict via boto3 iot-data (endpoint_url https://IOT_ENDPOINT), QoS 1: {camera, ts, is_smoke, confidence, likely_source, state: "CONFIRMED" if is_smoke and confidence >= CONF_THRESHOLD else "REJECTED", verifier, evidence} (docs/contracts.md section 2, F3/F5). If both Nemotron and Rekognition fail, publish nothing; the device times out.
+6. Publish the verdict to IoT topic burnwatch/<camera>/verdict via boto3 iot-data (endpoint_url https://IOT_ENDPOINT), QoS 1: {camera, ts, is_smoke, confidence, likely_source, state: "CONFIRMED" if is_smoke and confidence >= CONF_THRESHOLD else "REJECTED", verifier, evidence} (docs/contracts.md section 2, F3/F5). If all three verifiers fail, publish nothing; the device times out.
 7. Log one line of JSON with the full verdict (this is filmed in CloudWatch for the video).
 
 Prompt text for the verifier (keep it in a constant, inject camera name, local time, bbox):
@@ -261,9 +267,9 @@ Decide whether smoke is actually visible in or near that region and what is most
 Write complaint_text only if is_smoke is true and the source looks like open burning of waste, leaves or biomass. Make it a factual 3–4 sentence complaint to the local RWA or municipal helpline stating the place, the time and what is visible. Do not guess who is responsible. Otherwise complaint_text is an empty string."
 
 Also:
-- No extra Lambda dependencies: urllib from the standard library, boto3 from the Lambda runtime.
+- cloud/verify/requirements.txt: anthropic[bedrock] (the only Lambda dependency; urllib from the standard library, boto3 from the Lambda runtime).
 - cloud/test_verify.py: uploads a local JPEG with the right metadata to the bucket (laptop credentials), then polls DynamoDB until the row appears, then prints the row. Add 3 sample images to testdata/samples/ (I will drop them in: smoke, steam, empty). Run it on each and show me the verdicts.
-- Unit-test the pure parts (metadata parsing, message formatting, Rekognition mapping) with pytest and no AWS calls.
+- Unit-test the pure parts (metadata parsing, the strict JSON parser, the Claude → Nemotron → Rekognition fallback order with stubbed callers, message formatting, Rekognition mapping) with pytest and no AWS or NVIDIA calls.
 ````
 
 ---
@@ -424,7 +430,7 @@ Structure:
 1. One-line pitch + a GIF or screenshot of the viewer (docs/demo.gif; I'll add it).
 2. Problem: open burning in Delhi. Use ONLY the figures and sources in docs/sources.md, with links. If a figure isn't sourced there, leave it out.
 3. What it does, in 4 bullets: detects, verifies, alerts, keeps video private ("only one frame per event leaves the box").
-4. Architecture figure: docs/architecture.svg, hand-written SVG matching the brief's diagram (camera → laptop/DVR stand-in → HDMI → PL tile engine → ARM state machine → IoT Core / S3 → Lambda → Nemotron (NVIDIA API) → DynamoDB / SNS → verdict back). Readable in light and dark GitHub themes.
+4. Architecture figure: docs/architecture.svg, hand-written SVG matching the brief's diagram (camera → laptop/DVR stand-in → HDMI → PL tile engine → ARM state machine → IoT Core / S3 → Lambda → Claude on Bedrock (Nemotron fallback) → DynamoDB / SNS → verdict back). Readable in light and dark GitHub themes.
 5. PL/PS split: the spec table (stage, what it does, resource use from the actual synthesis report), the bit-exact verification story (golden model → HLS testbench → on-board check), and which ladder level we reached, stated precisely.
 6. AWS: each service, what it does here and why. Event and verdict JSON examples copied from real logs.
 7. Results: throughput table + test table from docs/results.md.
@@ -443,7 +449,7 @@ Write docs/video_script.md for a video of 3:00 or less (target 2:50). Read docs/
 
 Format: a table with columns time | what's on screen | narration (spoken, short sentences) | caption (big on-screen text, <= 6 words).
 Follow this structure:
-0:00–0:12 hook (burning footage) · 0:12–0:32 setup (phone → laptop as DVR stand-in → HDMI → PYNQ) · 0:32–1:00 live detection (heat map, CLEAR → SUSPECT, LED) · 1:00–1:15 confuser stays CLEAR · 1:15–1:50 AWS on screen (IoT test client → S3 object → Lambda log with the Nemotron verdict JSON → DynamoDB row → email arriving on the phone → CONFIRMED + red LED) · 1:50–2:15 architecture with measured numbers · 2:15–2:40 test table + one honest limitation (steam) · 2:40–3:00 who uses it + repo link + "Built 8–11 October 2026".
+0:00–0:12 hook (burning footage) · 0:12–0:32 setup (phone → laptop as DVR stand-in → HDMI → PYNQ) · 0:32–1:00 live detection (heat map, CLEAR → SUSPECT, LED) · 1:00–1:15 confuser stays CLEAR · 1:15–1:50 AWS on screen (IoT test client → S3 object → Lambda log with the Claude verdict JSON → DynamoDB row → email arriving on the phone → CONFIRMED + red LED) · 1:50–2:15 architecture with measured numbers · 2:15–2:40 test table + one honest limitation (steam) · 2:40–3:00 who uses it + repo link + "Built 8–11 October 2026".
 Use only numbers from docs/results.md. Mark any number not yet measured as [TBD].
 Then add:
 - A shot checklist: hardware take vs AWS console take, which tabs are open, phone screen recording for the email, camera angles, LED close-up.
