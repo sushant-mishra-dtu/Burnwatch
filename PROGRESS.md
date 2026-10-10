@@ -49,6 +49,8 @@ Owners follow Case A in BUILD_PLAN.md section 8 (Vivado on the Codex machine). *
 | G1 | GaugeEye pivot (only if GATE-H8 says pivot) | Claude Code | GATE-H8 | skipped: not pivoting | |
 | Z1 | ZedBoard + VIO RTL package of the tile engine (pasted prompt, Cloud Labs) | Claude Code | P2 | done | `zedboard/burnwatch_zed_vio/` (+ `.zip`): Verilog-2001 Part A (pixels -> tile means) and Part B (score, gate, baselines), simulated-input generators, VIO top, xdc, create/build/sim Tcl, README. Bit-exact vs golden.py in simulation at 1280x720 (14 tests, every tile; Verilator + iverilog) and 4,000 random scorer vectors. Vivado build, timing and the board run are not done yet. |
 
+| RTL-SIM | Native Vivado scoring-core simulation (user request) | Codex | P2 | in progress (23:39) | User requested changes to M:/Vivado Projects/Burnwatch/Burnwatch; native core + golden-vector testbench installed, XSim verification running. Separate from P8/P9. |
+
 ## Facts
 <!-- Discovered values that later prompts need. Append-only. No secrets. -->
 - H0 (clock time): 12:56 IST, 10 Oct 2026 (when the user typed "start" in Claude Code; correct it if you started earlier)
