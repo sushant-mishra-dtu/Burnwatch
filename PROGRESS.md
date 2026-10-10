@@ -73,6 +73,8 @@ Owners follow Case A in BUILD_PLAN.md section 8 (Vivado on the Codex machine). *
 
 - RTL-SIM (10 Oct 2026 23:49 IST): Vivado project M:/Vivado Projects/Burnwatch/Burnwatch/Burnwatch.xpr; native standalone core/testbench sources archived in overlays/rtl_sim. XSim PASS: 80 frames, 288000 scores, 0 mismatches, 928802 simulated cycles/frame at a 10 ns testbench clock. No synthesis/timing/board-FPS claim; AXI overlay is separate. Originals backed up in codex_backup_20261010_233428.
 
+- RTL-SYN (11 Oct 2026 00:20 IST): native synthesis completed after removing incremental DCP reuse; reports in M:/Vivado Projects/Burnwatch/Burnwatch/synthesis_results. LUT 12658/53200, FF 356, DSP 7, BRAM 0; target 100 MHz NOT met (WNS -17.202 ns); bare-top I/O 206/125, so no board-ready claim. RTL-SIM code/hash unchanged.
+
 ## Plan changes
 <!-- One line each: date-time, what changed in PROMPTS.md / BUILD_PLAN.md, and why. -->
 - 10 Oct 13:05, contracts F1–F6 (accepted by user): CLAUDE.md interface line → `step()` (F1); P2 Params in register order + range checks (F2), reset frame sets b = x before scoring (F4), and P2 now also writes tools/dump_golden.py (F6, moved from P8); P3 device obeys verdict.state (F3); P5 verdict adds camera/verifier/evidence, DynamoDB adds time_ist/verify_ms (F5); P6/P7 use tools/contracts.py + BWV1 verdict packet (F5); P4 may create the cloud/verify stub + cameras.json (F6).
