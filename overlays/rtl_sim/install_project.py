@@ -82,6 +82,7 @@ def main():
     )
     shutil.copy2(source_dir / "README.md", root / "README_LOCAL_SIM.md")
     shutil.copy2(source_dir / "synthesize_project.tcl", root / "synthesize_project.tcl")
+    shutil.copy2(source_dir / "implement_core_ooc.tcl", root / "implement_core_ooc.tcl")
     print(f"Installed design: {design}")
     print(f"Installed testbench: {bench}")
     print(f"Originals backed up: {backup}")

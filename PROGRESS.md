@@ -53,6 +53,8 @@ Owners follow Case A in BUILD_PLAN.md section 8 (Vivado on the Codex machine). *
 
 | RTL-SYN | Fix native Vivado synthesis configuration | Codex | RTL-SIM | done | Fixed checkpoint-path parsing by disabling automatic/manual incremental reuse; added 10 ns clock and verified synth_1 completes. Reports: 12658 LUTs, 356 FF, 7 DSP, 0 BRAM; WNS -17.202 ns and 206/125 I/O. Hardware timing/pin fit still requires pipelining + AXI wrapper; RTL unchanged, prior XSim pass retained. |
 
+| RTL-OOC | Standalone core placement/routing analysis | Codex | RTL-SYN | done | Separate OOC module flow completed: 9114/9114 routable nets routed, 0 routing errors, 12708 LUTs / 1005 FF / 7 DSP / 0 BRAM. 100 MHz setup FAIL (WNS -20.092 ns); 21 DRC warnings. RTL unchanged; full board wrapper, boundary timing and physical test remain pending. |
+
 ## Facts
 <!-- Discovered values that later prompts need. Append-only. No secrets. -->
 - H0 (clock time): 12:56 IST, 10 Oct 2026 (when the user typed "start" in Claude Code; correct it if you started earlier)
@@ -72,6 +74,10 @@ Owners follow Case A in BUILD_PLAN.md section 8 (Vivado on the Codex machine). *
 - ZedBoard (Cloud Labs, from 10 Oct 17:47): part xc7z020clg484-1, GCLK Y9 LVCMOS33 100 MHz, LEDs T22 T21 U22 U21 V22 W22 U19 U14 (Digilent master XDC + BoardStore 2022.1 avnet zedboard 1.4). User's Vivado: 2022.1.
 
 - RTL-SIM (10 Oct 2026 23:49 IST): Vivado project M:/Vivado Projects/Burnwatch/Burnwatch/Burnwatch.xpr; native standalone core/testbench sources archived in overlays/rtl_sim. XSim PASS: 80 frames, 288000 scores, 0 mismatches, 928802 simulated cycles/frame at a 10 ns testbench clock. No synthesis/timing/board-FPS claim; AXI overlay is separate. Originals backed up in codex_backup_20261010_233428.
+
+- RTL-SYN (11 Oct 2026 00:20 IST): native synthesis completed after removing incremental DCP reuse; reports in M:/Vivado Projects/Burnwatch/Burnwatch/synthesis_results. LUT 12658/53200, FF 356, DSP 7, BRAM 0; target 100 MHz NOT met (WNS -17.202 ns); bare-top I/O 206/125, so no board-ready claim. RTL-SIM code/hash unchanged.
+
+- RTL-OOC (11 Oct 2026 00:37 IST): separate Vivado 2022.1 module analysis in core_ooc_results completed placement/routing with 9114/9114 routable nets, 0 routing errors, LUT 12708, FF 1005, DSP 7, BRAM 0. 10 ns setup WNS -20.092 ns / TNS -311408.031 ns: timing NOT met. 21 default-DRC warnings; parent clock assumed BUFGCTRL_X0Y0; external boundary timing/PS integration/pinout/board test are not validated. Scoring RTL unchanged.
 
 ## Plan changes
 <!-- One line each: date-time, what changed in PROMPTS.md / BUILD_PLAN.md, and why. -->
@@ -94,3 +100,5 @@ Owners follow Case A in BUILD_PLAN.md section 8 (Vivado on the Codex machine). *
 - 23:49, RTL-SIM, Codex: requested native Vivado project completed; 80 full-resolution synthetic frames bit-exact (scores + persisted state), 24 Python reference/contract tests pass, local report saved.
 - 00:20, RTL-SYN, Codex: fixed Common 17-165 configuration error, synth_1 Complete; saved resource/timing reports and documented clock/pin limitations.
 - 00:30, RTL-SYN files, Claude Code: copied Codex's finished synthesis results from the Vivado project into overlays/rtl_sim (SYNTHESIS_VALIDATION.md, reports/, implement_core_ooc.tcl). The OOC place-and-route was still running, so none of its results are included.
+- 00:40, RTL-OOC, Codex: saved reproducible OOC workflow and routed checkpoint/reports; internal routing complete, 100 MHz timing failure and full-system limits documented in overlays/rtl_sim/OOC_VALIDATION.md.
+- 00:50, RTL-OOC files, Claude Code: copied Codex's finished core-only OOC place-and-route results into overlays/rtl_sim (OOC_VALIDATION.md, reports/ooc_*, README section). All nets routed, 0 routing errors; setup WNS -20.092 ns at 100 MHz (fails).

@@ -288,7 +288,7 @@ Prepare before the slot: the bitstream built, timing met, EXPECTED_RESULTS.md op
 | Part B datapath, 4,000 random vectors with random register values (iverilog) | **ran, PASS**, bit-exact with golden.py |
 | System testbench, 320x192 geometry: T0-T9, 14 demo tests, every tile (iverilog and Verilator) | **ran, PASS** |
 | System testbench, **1280x720**: T0-T9, 14 demo tests, every tile (Verilator) | **ran, PASS** |
-| System testbench, 1280x720 (iverilog, event-driven) | see the note in the delivery message |
+| System testbench, 1280x720 (iverilog, event-driven, 21 min) | **ran, PASS** |
 | Testbench sensitivity: 5 injected RTL bugs (Sobel border, rounding, prev_gate mask, luma weight, gate compare) | each one **detected** (FAIL) |
 | Lint (Verilator -Wall) | clean except intentionally unused bits |
 | Yosys `synth_xilinx` synthesis (xc7) | **ran**: synthesizes, no latches; ~1,320 LUT, 1,225 FF, 10 RAMB36 + 3 RAMB18, 3 DSP48 (estimate) |
