@@ -39,7 +39,7 @@ Owners follow Case A in BUILD_PLAN.md section 8 (Vivado on the Codex machine). *
 | P6 | Device runtime (A: cloud client, B: PYNQ loop) | Claude Code | P1, P3, P4, GATE-H8 | todo | |
 | P7 | Live viewer + fake_device | Claude Code | P0b, P3 | todo | |
 | P9 | Level-2 overlay + on-board bit-exact check | Codex | P8 | todo | |
-| R1 | Citable facts → `docs/sources.md` | GPT (Omnirush) | none | todo | |
+| R1 | Citable facts → `docs/sources.md` | GPT (Omnirush) | none | in progress (13:20) | Omnirush research pass started. |
 | P10 | Level-3 live integration (stretch, only if before ~H17) | Codex | P9 | todo | |
 | GATE-H20 | PL cut decision | Claude Code | P6 | todo | Run at H20 even if P9 isn't done |
 | P11 | Benchmarks + final test table | Claude Code | P6, GATE-H20 | todo | |
