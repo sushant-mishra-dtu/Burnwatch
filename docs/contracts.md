@@ -66,7 +66,7 @@ The Lambda is triggered by S3, not by this message. The event exists for the IoT
 
 ### Verdict (Lambda → `burnwatch/<camera>/verdict`)
 ```json
-{"camera":"rwa-gate-2","ts":1791622800,"is_smoke":true,"confidence":0.86,"likely_source":"leaf or biomass burning","state":"CONFIRMED","verifier":"claude","evidence":"A grey plume rises from a pile of leaves at the left of the box."}
+{"camera":"rwa-gate-2","ts":1791622800,"is_smoke":true,"confidence":0.86,"likely_source":"leaf or biomass burning","state":"CONFIRMED","verifier":"nemotron","evidence":"A grey plume rises from a pile of leaves at the left of the box."}
 ```
 | Field | Type | Meaning |
 |---|---|---|
@@ -76,7 +76,7 @@ The Lambda is triggered by S3, not by this message. The event exists for the IoT
 | `confidence` | number | 0–1, 2 decimals |
 | `likely_source` | string | one of: `open waste burning`, `leaf or biomass burning`, `incense or small flame`, `cooking or tandoor`, `vehicle exhaust`, `steam or fog`, `dust`, `not smoke`, `unclear` |
 | `state` | string | `"CONFIRMED"` if `is_smoke and confidence >= CONF_THRESHOLD`, else `"REJECTED"`. **The device obeys this field** (⚑F3) |
-| `verifier` | string | `"claude"` or `"rekognition"` (⚑F5 addition) |
+| `verifier` | string | `"nemotron"` or `"rekognition"` (⚑F5 addition; was `"claude"` until 10 Oct 13:56) |
 | `evidence` | string | one sentence, as stored in DynamoDB (⚑F5 addition; the viewer shows it) |
 
 `complaint_text` is **not** sent to the device. It only goes to DynamoDB and the email.
@@ -121,9 +121,9 @@ The Lambda is triggered by S3, not by this message. The event exists for the IoT
 | `likely_source` | S | one of the enum values |
 | `evidence` | S | one sentence |
 | `complaint_text` | S | draft complaint, or `""` |
-| `verifier` | S | `claude` or `rekognition` |
+| `verifier` | S | `nemotron` or `rekognition` |
 | `latency_ms` | N | Lambda "now" just before PutItem, minus the S3 event record's `eventTime` |
-| `verify_ms` | N | the Bedrock (or Rekognition) call alone (◇) |
+| `verify_ms` | N | the Nemotron (or Rekognition) call alone (◇) |
 
 With boto3's resource API, numbers must be `Decimal` (`Decimal(str(x))`), not float.
 
@@ -194,7 +194,7 @@ eng.prev_gate                         # bool, = gate after the step
 
 **Baseline update** (after scoring, not on a reset frame, only when `update_this_frame`): `k = K_FAST if prev_gate else K_SLOW`; on tiles where `prev_gate or score < T_FLAG`: `b += (x - b + ((1 << k) >> 1)) >> k`, with `>>` an arithmetic shift (⚑F7).
 
-**Caller rule (⚑F7):** when a verdict with `state` `"REJECTED"` arrives, the device calls `eng.reset()`, so the next frame re-baselines everything Claude judged not to be smoke.
+**Caller rule (⚑F7):** when a verdict with `state` `"REJECTED"` arrives, the device calls `eng.reset()`, so the next frame re-baselines everything the verifier judged not to be smoke.
 
 With these ranges every intermediate fits in int32: `raw ≤ 255·65280·2 < 2²⁵`, and `bS + SAT_TOL ≤ 130815` (18 bits).
 

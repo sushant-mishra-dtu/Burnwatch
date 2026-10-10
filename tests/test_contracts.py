@@ -30,7 +30,7 @@ def test_udp_frame_round_trip():
 def test_udp_verdict_round_trip():
     v = {"camera": "rwa-gate-2", "ts": 1791622800, "is_smoke": True, "confidence": 0.86,
          "likely_source": "leaf or biomass burning", "state": "CONFIRMED",
-         "verifier": "claude", "evidence": "Grey plume."}
+         "verifier": "nemotron", "evidence": "Grey plume."}
     d = c.unpack_viewer_packet(c.pack_verdict_packet(v))
     assert d.pop("kind") == "verdict" and c.check_fields(d, c.VERDICT_FIELDS) == v
 

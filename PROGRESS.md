@@ -62,6 +62,7 @@ Owners follow Case A in BUILD_PLAN.md section 8 (Vivado on the Codex machine). *
 - Codex P4 tooling: Python 3.13.5; Lambda runtime python3.13; SAM CLI 1.168.0 installed in ignored cloud/.venv. AWS CLI is not currently on PATH. SAM validation/build and 14 cloud tests passed locally; no cloud deployment or real MQTT test yet.
 - P4 device environment keys: IOT_ENDPOINT, CAMERA_ID, CLIENT_ID, CERT_PATH, KEY_PATH, CA_PATH, BUCKET, AWS_REGION, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY (device/.env.example). setup_iot.py writes absolute local certificate paths; change those paths after copying to the PYNQ.
 - P4 Bedrock policy: non-streaming bedrock-runtime InvokeModel requires bedrock:InvokeModel (AWS API reference verified); permission targets the configured direct foundation model. Model ID remains anthropic.claude-haiku-5-5; serving region/account access still unverified.
+- Cloud verifier (from 13:56): NVIDIA Nemotron vision model on NVIDIA's hosted API (`https://integrate.api.nvidia.com/v1`). Model ID: ___ (fill after cloud/nim_probe.py). Key lives only in git-ignored `cloud/.env` and the NoEcho SAM parameter `NvidiaApiKey`. The P4 Bedrock facts above are superseded.
 
 ## Plan changes
 <!-- One line each: date-time, what changed in PROMPTS.md / BUILD_PLAN.md, and why. -->
@@ -69,6 +70,7 @@ Owners follow Case A in BUILD_PLAN.md section 8 (Vivado on the Codex machine). *
 - 10 Oct 13:23, contracts F7 (decided by user 13:20): spec v1 now has K_FAST = 0 (snap b = x after a gated frame, range 0–15) and the update rounding term `(1 << k) >> 1`; contracts.md sections 6–8 updated. PROMPTS.md P2 (spec + constants), P8 (rounding note), P3 (REJECTED emits `rebaseline`) and P6 (rebaseline → engine.reset()) edited to match. Why: v1 left all 3,600 tiles flagged forever after a lighting change.
 - 10 Oct 13:23, contracts section 8 (◇ additive): optional extra vector sets `<set>-u<N>` (`dump_golden.py --update-every N --reset-at 0,30`) cover update=0 frames and a mid-sequence reset; same format.
 - 10 Oct 13:43, P4 CodeUri in PROMPTS.md corrected to verify/ relative to cloud/template.yaml (resolves to cloud/verify/). SAM's relative-path handling otherwise looks for cloud/cloud/verify/; local build confirmed the corrected path.
+- 10 Oct 13:56, verifier switched from Claude Haiku 5.5 on Bedrock to an NVIDIA Nemotron vision model (user decision). PROMPTS.md P4 (template params/env: NvidiaApiKey NoEcho, VerifierModelId, NimBaseUrl; Bedrock IAM removed), P5 (urllib call, probe first, strict JSON parse, verifier="nemotron"), P12/P13 wording; BUILD_PLAN sections 1, 2, 3, 5, 6, 8; CLAUDE.md; contracts.md verifier enum; tests/test_contracts.py. .gitignore now ignores samconfig.toml (it would hold AlertEmail and the key). **Codex: P4's template.yaml and cloud/README.md need reworking to match before deployment.**
 
 ## Log
 <!-- One line per finished task: HH:MM, ID, tool, one-line result. -->

@@ -26,6 +26,7 @@ recordings/
 
 # AWS SAM
 .aws-sam/
+samconfig.toml
 samconfig.toml.bak
 
 # Vivado / Vitis HLS build outputs
