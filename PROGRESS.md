@@ -92,3 +92,4 @@ Owners follow Case A in BUILD_PLAN.md section 8 (Vivado on the Codex machine). *
 - 13:43, P4 checkpoint, Codex: AWS template/setup scripts prepared; SAM lint/build and 14 mocked tests pass. Waiting for the prompt's required template/IAM approval before deploying, provisioning credentials or running live MQTT verification.
 - 17:47, Z1, Claude Code: ZedBoard VIO RTL package; bit-exact with golden.py in simulation (1280x720, all tiles); Vivado/board not run here.
 - 23:49, RTL-SIM, Codex: requested native Vivado project completed; 80 full-resolution synthetic frames bit-exact (scores + persisted state), 24 Python reference/contract tests pass, local report saved.
+- 00:30, RTL-SYN files, Claude Code: copied Codex's finished synthesis results from the Vivado project into overlays/rtl_sim (SYNTHESIS_VALIDATION.md, reports/, implement_core_ooc.tcl). The OOC place-and-route was still running, so none of its results are included.

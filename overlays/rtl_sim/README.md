@@ -81,3 +81,8 @@ post-synthesis timing, not post-route timing closure. The standalone memory and
 parameter ports are not a board pinout: physical deployment requires the planned
 AXI/PS wrapper and appropriate interface constraints. The reports must be assessed
 before claiming the complete design fits or runs at 100 MHz on the board.
+
+Synthesis results from the Vivado project are summarised in
+[SYNTHESIS_VALIDATION.md](SYNTHESIS_VALIDATION.md), with the raw reports in `reports/`.
+`implement_core_ooc.tcl` runs an out-of-context place-and-route of the core alone
+(no pinout, no bitstream); its results are not recorded here yet.
