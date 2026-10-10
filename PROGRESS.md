@@ -57,7 +57,7 @@ Owners follow Case A in BUILD_PLAN.md section 8 (Vivado on the Codex machine). *
 - IoT ATS endpoint: 
 - S3 bucket / DynamoDB table / SNS topic: 
 - PYNQ IP address: 
-- GitHub repo URL: https://github.com/sushant-mishra-dtu/burnwatch (public, branch `main`)
+- GitHub repo URL: https://github.com/sushant-mishra-dtu/Burnwatch (public, branch `main`)
 
 ## Plan changes
 <!-- One line each: date-time, what changed in PROMPTS.md / BUILD_PLAN.md, and why. -->
