@@ -47,6 +47,7 @@ Owners follow Case A in BUILD_PLAN.md section 8 (Vivado on the Codex machine). *
 | P13 | Video script + shot list | Claude Code | P11 | todo | |
 | U3 | Record, edit (≤ 3:00), check the repo is public, submit | You | P12, P13 | todo | |
 | G1 | GaugeEye pivot (only if GATE-H8 says pivot) | Claude Code | GATE-H8 | skipped: not pivoting | |
+| Z1 | ZedBoard + VIO RTL package of the tile engine (pasted prompt, Cloud Labs) | Claude Code | P2 | done | `zedboard/burnwatch_zed_vio/` (+ `.zip`): Verilog-2001 Part A (pixels -> tile means) and Part B (score, gate, baselines), simulated-input generators, VIO top, xdc, create/build/sim Tcl, README. Bit-exact vs golden.py in simulation at 1280x720 (14 tests, every tile; Verilator + iverilog) and 4,000 random scorer vectors. Vivado build, timing and the board run are not done yet. |
 
 ## Facts
 <!-- Discovered values that later prompts need. Append-only. No secrets. -->
@@ -64,6 +65,7 @@ Owners follow Case A in BUILD_PLAN.md section 8 (Vivado on the Codex machine). *
 - P4 Bedrock policy: non-streaming bedrock-runtime InvokeModel requires bedrock:InvokeModel (AWS API reference verified); permission targets the configured direct foundation model. Model ID remains anthropic.claude-haiku-5-5; serving region/account access still unverified.
 - Cloud verifier (from 13:56): NVIDIA Nemotron vision model on NVIDIA's hosted API (`https://integrate.api.nvidia.com/v1`). Model ID: ___ (fill after cloud/nim_probe.py). Key lives only in git-ignored `cloud/.env` and the NoEcho SAM parameter `NvidiaApiKey`. The P4 Bedrock facts above are superseded.
 - Cloud verifier (from 10 Oct 16:24, user decision, supersedes the 13:56 Nemotron-only line): Claude `anthropic.claude-haiku-5-5` on the Bedrock **Mantle** endpoint in `ap-south-1` (docs list Mumbai with global routing; Mantle has no structured outputs). IAM action `bedrock-mantle:CreateInference`, currently on `Resource: '*'` because the resource ARN format could not be verified. Fallback: NVIDIA Nemotron (skipped when `NvidiaApiKey`/`NvidiaModelId` are empty), then Rekognition. Haiku 5.5 account access in ap-south-1: ___ (fill after cloud/bedrock_probe.py). `sam build` with `anthropic[bedrock]` (anthropic 1.13.0, Linux wheels) passes; build into a short path on Windows (MAX_PATH).
+- ZedBoard (Cloud Labs, from 10 Oct 17:47): part xc7z020clg484-1, GCLK Y9 LVCMOS33 100 MHz, LEDs T22 T21 U22 U21 V22 W22 U19 U14 (Digilent master XDC + BoardStore 2022.1 avnet zedboard 1.4). User's Vivado: 2022.1.
 
 ## Plan changes
 <!-- One line each: date-time, what changed in PROMPTS.md / BUILD_PLAN.md, and why. -->
@@ -73,6 +75,7 @@ Owners follow Case A in BUILD_PLAN.md section 8 (Vivado on the Codex machine). *
 - 10 Oct 13:43, P4 CodeUri in PROMPTS.md corrected to verify/ relative to cloud/template.yaml (resolves to cloud/verify/). SAM's relative-path handling otherwise looks for cloud/cloud/verify/; local build confirmed the corrected path.
 - 10 Oct 13:56, verifier switched from Claude Haiku 5.5 on Bedrock to an NVIDIA Nemotron vision model (user decision). PROMPTS.md P4 (template params/env: NvidiaApiKey NoEcho, VerifierModelId, NimBaseUrl; Bedrock IAM removed), P5 (urllib call, probe first, strict JSON parse, verifier="nemotron"), P12/P13 wording; BUILD_PLAN sections 1, 2, 3, 5, 6, 8; CLAUDE.md; contracts.md verifier enum; tests/test_contracts.py. .gitignore now ignores samconfig.toml (it would hold AlertEmail and the key). **Codex: P4's template.yaml and cloud/README.md need reworking to match before deployment.**
 - 10 Oct 16:24, verifier is Claude on Bedrock again, with NVIDIA Nemotron as fallback (user decision): chain Claude → Nemotron → Rekognition, `verifier` enum now `claude`/`nemotron`/`rekognition`. Edited cloud/template.yaml (BedrockRegion removed, region = stack region; BedrockModelId, NvidiaApiKey NoEcho default "", NvidiaModelId default "", NimBaseUrl; IAM `bedrock-mantle:CreateInference` replaces `bedrock:InvokeModel`; timeout 60 → 90 s), cloud/README.md, cloud/verify/requirements.txt (anthropic[bedrock]), PROMPTS.md P4/P5/P12/P13, BUILD_PLAN sections 1, 2, 3, 6, 8, CLAUDE.md, contracts.md (verdict example/enum, verify_ms, F3), tests/test_contracts.py. The P4 template/IAM still needs the user's approval before deploying.
+- 10 Oct 17:47, user: PYNQ-Z2 is not used for now. Added row Z1 and `zedboard/`, a hand-written Verilog version of the tile engine with VIO control for a ZedBoard in IIIT-Delhi Cloud Labs (synthetic on-chip frames, no HDMI). P8/P9 (HLS + PYNQ overlay, Codex) are unchanged; Z1 matches the same spec, golden.py.
 
 ## Log
 <!-- One line per finished task: HH:MM, ID, tool, one-line result. -->
@@ -80,3 +83,4 @@ Owners follow Case A in BUILD_PLAN.md section 8 (Vivado on the Codex machine). *
 - 13:05, P0b, Claude Code: docs/contracts.md + tools/contracts.py, 6 conflicts resolved by the user.
 - 13:23, P2, Claude Code: golden model + 19 tests, gen_header, dump_golden (synthetic set ready for Codex P8); F7 deadlock found and fixed (K_FAST=0 snap).
 - 13:43, P4 checkpoint, Codex: AWS template/setup scripts prepared; SAM lint/build and 14 mocked tests pass. Waiting for the prompt's required template/IAM approval before deploying, provisioning credentials or running live MQTT verification.
+- 17:47, Z1, Claude Code: ZedBoard VIO RTL package; bit-exact with golden.py in simulation (1280x720, all tiles); Vivado/board not run here.
