@@ -1,0 +1,149 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: BurnWatch frame storage, verification, event log and email alerts.
+
+Parameters:
+  AlertEmail:
+    Type: String
+    AllowedPattern: '^[^\s@]+@[^\s@]+\.[^\s@]+$'
+    Description: Confirm the SNS subscription sent to this email address.
+  BedrockRegion:
+    Type: String
+    AllowedPattern: '^[a-z]{2}(-[a-z]+)+-[0-9]+$'
+    Description: Region where the model has been verified in the Bedrock console.
+  BedrockModelId:
+    Type: String
+    Default: anthropic.claude-haiku-5-5
+    AllowedPattern: '^anthropic\.[a-zA-Z0-9.:-]+$'
+    Description: Direct foundation-model ID; inference profiles need a policy review.
+  ConfidenceThreshold:
+    Type: Number
+    Default: 0.6
+    MinValue: 0
+    MaxValue: 1
+  IotEndpoint:
+    Type: String
+    AllowedPattern: '^[a-z0-9-]+-ats\.iot\.ap-south-1\.amazonaws\.com$'
+    Description: Hostname from describe_endpoint(endpointType='iot:Data-ATS').
+
+Resources:
+  FramesBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      # Repeat this name in the Lambda policy/env to avoid an S3 dependency cycle.
+      BucketName: !Sub 'burnwatch-frames-${AWS::AccountId}-${AWS::Region}'
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        IgnorePublicAcls: true
+        BlockPublicPolicy: true
+        RestrictPublicBuckets: true
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      LifecycleConfiguration:
+        Rules:
+          - Id: ExpireFrames
+            Status: Enabled
+            Prefix: frames/
+            ExpirationInDays: 7
+
+  EventsTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      TableName: burnwatch-events
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: camera
+          AttributeType: S
+        - AttributeName: ts
+          AttributeType: N
+      KeySchema:
+        - AttributeName: camera
+          KeyType: HASH
+        - AttributeName: ts
+          KeyType: RANGE
+
+  AlertsTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: burnwatch-alerts
+      Subscription:
+        - Protocol: email
+          Endpoint: !Ref AlertEmail
+
+  VerifyFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      # SAM resolves CodeUri relative to cloud/template.yaml, hence verify/.
+      CodeUri: verify/
+      Handler: app.lambda_handler
+      Runtime: python3.13
+      Timeout: 60
+      MemorySize: 512
+      Environment:
+        Variables:
+          TABLE: !Ref EventsTable
+          TOPIC_ARN: !Ref AlertsTopic
+          BEDROCK_REGION: !Ref BedrockRegion
+          MODEL_ID: !Ref BedrockModelId
+          CONF_THRESHOLD: !Ref ConfidenceThreshold
+          IOT_ENDPOINT: !Ref IotEndpoint
+          BUCKET: !Sub 'burnwatch-frames-${AWS::AccountId}-${AWS::Region}'
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Sid: ReadFrames
+              Effect: Allow
+              Action: s3:GetObject
+              Resource: !Sub 'arn:${AWS::Partition}:s3:::burnwatch-frames-${AWS::AccountId}-${AWS::Region}/frames/*'
+            - Sid: WriteEvents
+              Effect: Allow
+              Action: dynamodb:PutItem
+              Resource: !GetAtt EventsTable.Arn
+            - Sid: SendAlerts
+              Effect: Allow
+              Action: sns:Publish
+              Resource: !Ref AlertsTopic
+            - Sid: PublishVerdicts
+              Effect: Allow
+              Action: iot:Publish
+              Resource: !Sub 'arn:${AWS::Partition}:iot:${AWS::Region}:${AWS::AccountId}:topic/burnwatch/*/verdict'
+            - Sid: FallbackImageLabels
+              Effect: Allow
+              Action: rekognition:DetectLabels
+              Resource: '*'
+            - Sid: InvokeConfiguredClaude
+              Effect: Allow
+              Action: bedrock:InvokeModel
+              Resource: !Sub 'arn:${AWS::Partition}:bedrock:${BedrockRegion}::foundation-model/${BedrockModelId}'
+      Events:
+        FrameCreated:
+          Type: S3
+          Properties:
+            Bucket: !Ref FramesBucket
+            Events: s3:ObjectCreated:*
+            Filter:
+              S3Key:
+                Rules:
+                  - Name: prefix
+                    Value: frames/
+                  - Name: suffix
+                    Value: .jpg
+
+Outputs:
+  BucketName:
+    Value: !Ref FramesBucket
+  TableName:
+    Value: !Ref EventsTable
+  TopicArn:
+    Value: !Ref AlertsTopic
+  VerifyFunctionName:
+    Value: !Ref VerifyFunction

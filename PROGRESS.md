@@ -31,7 +31,7 @@ Owners follow Case A in BUILD_PLAN.md section 8 (Vivado on the Codex machine). *
 | P1 | camfeed.py + HDMI check | Claude Code | P0 | blocked: plug laptop HDMI out → PYNQ HDMI IN, set that display to 1280×720 @ 60 Hz in Extend mode, run `python tools/camfeed.py --camera 1 --monitor N`, then on the board `bash device/run.sh device/hdmi_check.py` (device/README.md) | tools/camfeed.py (camera/clip, letterbox 1280×720, full screen, q/b/space), device/hdmi_check.py, device/run.sh, device/README.md. Laptop side tested: `--list` probes OK, letterbox and clip loop verified headless. Board run pending (board not reachable yet). |
 | P2 | Golden model + tests (spec v1 frozen at H5) | Claude Code | P0b | done | detector/config.py + golden.py (spec v1 with F7: K_FAST=0 snap), tests/test_golden.py 19 pass (incl. 6 lighting-recovery cases), hls/config.h via tools/gen_header.py, tools/dump_golden.py: `--synthetic` set has frame 20 gated, digest df5d3395673a5e38 (numpy 2.2.6). Laptop: FULL 57 ms/frame, ARM-fast 14 ms/frame. Known limit: a gated frame absorbs smoke present then; ghosts of objects present at reset. |
 | U2 | Record the clip set + fill `testdata/labels.csv` | You | P1 | todo | |
-| P4 | AWS stack + IoT thing + device IAM | Codex | P0b | in progress (13:31) | Preparing SAM template and idempotent Windows setup scripts; deployment approval checkpoint follows validation. |
+| P4 | AWS stack + IoT thing + device IAM | Codex | P0b | waiting: approval of template + IAM policies before deployment | cloud/template.yaml, idempotent IoT/IAM scripts, MQTT smoke test, verifier stub/cameras.json and device/.env.example ready. SAM lint + Python 3.13 build pass; 14 mocked cloud tests pass. No AWS stack or credentials provisioned; need deployment approval, AlertEmail and verified BedrockRegion. |
 | P5 | Lambda verifier (Claude on Bedrock) | Claude Code | P4 | todo | |
 | P3 | Regions, state machine, eval_clips, replay viewer | Claude Code | P2, U2 | todo | |
 | P8 | HLS tile engine, bit-exact C-sim | Codex | P2 | todo | |
@@ -59,15 +59,20 @@ Owners follow Case A in BUILD_PLAN.md section 8 (Vivado on the Codex machine). *
 - PYNQ IP address: 
 - GitHub repo URL: https://github.com/sushant-mishra-dtu/Burnwatch (public, branch `main`)
 - Laptop cameras: OpenCV 4.13 (pip) opens webcams via Media Foundation only (DSHOW-by-index unsupported); indices 0 and 1 both deliver 1280×720 @ 30. Monitors without the PYNQ: 0 = 2560×1440 primary, 1 = 1920×1080.
+- Codex P4 tooling: Python 3.13.5; Lambda runtime python3.13; SAM CLI 1.168.0 installed in ignored cloud/.venv. AWS CLI is not currently on PATH. SAM validation/build and 14 cloud tests passed locally; no cloud deployment or real MQTT test yet.
+- P4 device environment keys: IOT_ENDPOINT, CAMERA_ID, CLIENT_ID, CERT_PATH, KEY_PATH, CA_PATH, BUCKET, AWS_REGION, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY (device/.env.example). setup_iot.py writes absolute local certificate paths; change those paths after copying to the PYNQ.
+- P4 Bedrock policy: non-streaming bedrock-runtime InvokeModel requires bedrock:InvokeModel (AWS API reference verified); permission targets the configured direct foundation model. Model ID remains anthropic.claude-haiku-5-5; serving region/account access still unverified.
 
 ## Plan changes
 <!-- One line each: date-time, what changed in PROMPTS.md / BUILD_PLAN.md, and why. -->
 - 10 Oct 13:05, contracts F1–F6 (accepted by user): CLAUDE.md interface line → `step()` (F1); P2 Params in register order + range checks (F2), reset frame sets b = x before scoring (F4), and P2 now also writes tools/dump_golden.py (F6, moved from P8); P3 device obeys verdict.state (F3); P5 verdict adds camera/verifier/evidence, DynamoDB adds time_ist/verify_ms (F5); P6/P7 use tools/contracts.py + BWV1 verdict packet (F5); P4 may create the cloud/verify stub + cameras.json (F6).
 - 10 Oct 13:23, contracts F7 (decided by user 13:20): spec v1 now has K_FAST = 0 (snap b = x after a gated frame, range 0–15) and the update rounding term `(1 << k) >> 1`; contracts.md sections 6–8 updated. PROMPTS.md P2 (spec + constants), P8 (rounding note), P3 (REJECTED emits `rebaseline`) and P6 (rebaseline → engine.reset()) edited to match. Why: v1 left all 3,600 tiles flagged forever after a lighting change.
 - 10 Oct 13:23, contracts section 8 (◇ additive): optional extra vector sets `<set>-u<N>` (`dump_golden.py --update-every N --reset-at 0,30`) cover update=0 frames and a mid-sequence reset; same format.
+- 10 Oct 13:43, P4 CodeUri in PROMPTS.md corrected to verify/ relative to cloud/template.yaml (resolves to cloud/verify/). SAM's relative-path handling otherwise looks for cloud/cloud/verify/; local build confirmed the corrected path.
 
 ## Log
 <!-- One line per finished task: HH:MM, ID, tool, one-line result. -->
 - 13:00, P0, Claude Code: repo bootstrapped, first commit on `main`, pushed to GitHub.
 - 13:05, P0b, Claude Code: docs/contracts.md + tools/contracts.py, 6 conflicts resolved by the user.
 - 13:23, P2, Claude Code: golden model + 19 tests, gen_header, dump_golden (synthetic set ready for Codex P8); F7 deadlock found and fixed (K_FAST=0 snap).
+- 13:43, P4 checkpoint, Codex: AWS template/setup scripts prepared; SAM lint/build and 14 mocked tests pass. Waiting for the prompt's required template/IAM approval before deploying, provisioning credentials or running live MQTT verification.

@@ -201,7 +201,7 @@ template.yaml (parameters: AlertEmail, BedrockRegion, BedrockModelId default "an
 - S3 bucket for frames. Lifecycle rule deletes frames/ after 7 days. Block all public access. ObjectCreated notification on prefix frames/ suffix .jpg → VerifyFunction.
 - DynamoDB table burnwatch-events: PK camera (S), SK ts (N), on-demand billing.
 - SNS topic burnwatch-alerts with an email subscription to AlertEmail.
-- VerifyFunction (Python; runtime must match the local Python version used by `sam build` — check `python --version`), timeout 60 s, memory 512 MB, CodeUri cloud/verify/ (handler only stubbed here; P5 fills it in).
+- VerifyFunction (Python; runtime must match the local Python version used by `sam build` — check `python --version`), timeout 60 s, memory 512 MB, CodeUri verify/ relative to cloud/template.yaml (resolves to cloud/verify/; handler only stubbed here; P5 fills it in).
   Env: TABLE, TOPIC_ARN, BEDROCK_REGION, MODEL_ID, CONF_THRESHOLD, IOT_ENDPOINT (parameter), BUCKET.
   IAM: s3:GetObject on the bucket, dynamodb:PutItem on the table, sns:Publish on the topic, iot:Publish on topic/burnwatch/*/verdict, rekognition:DetectLabels, plus the Bedrock permission needed to invoke Claude through the anthropic SDK's Bedrock client.
   Look up the exact IAM action for the Bedrock endpoint the SDK uses (the claude-api skill covers the Bedrock clients); don't guess.
