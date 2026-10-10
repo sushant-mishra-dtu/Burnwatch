@@ -31,7 +31,7 @@ Owners follow Case A in BUILD_PLAN.md section 8 (Vivado on the Codex machine). *
 | P1 | camfeed.py + HDMI check | Claude Code | P0 | blocked: plug laptop HDMI out → PYNQ HDMI IN, set that display to 1280×720 @ 60 Hz in Extend mode, run `python tools/camfeed.py --camera 1 --monitor N`, then on the board `bash device/run.sh device/hdmi_check.py` (device/README.md) | tools/camfeed.py (camera/clip, letterbox 1280×720, full screen, q/b/space), device/hdmi_check.py, device/run.sh, device/README.md. Laptop side tested: `--list` probes OK, letterbox and clip loop verified headless. Board run pending (board not reachable yet). |
 | P2 | Golden model + tests (spec v1 frozen at H5) | Claude Code | P0b | done | detector/config.py + golden.py (spec v1 with F7: K_FAST=0 snap), tests/test_golden.py 19 pass (incl. 6 lighting-recovery cases), hls/config.h via tools/gen_header.py, tools/dump_golden.py: `--synthetic` set has frame 20 gated, digest df5d3395673a5e38 (numpy 2.2.6). Laptop: FULL 57 ms/frame, ARM-fast 14 ms/frame. Known limit: a gated frame absorbs smoke present then; ghosts of objects present at reset. |
 | U2 | Record the clip set + fill `testdata/labels.csv` | You | P1 | todo | |
-| P4 | AWS stack + IoT thing + device IAM | Codex | P0b | todo | |
+| P4 | AWS stack + IoT thing + device IAM | Codex | P0b | in progress (13:31) | Preparing SAM template and idempotent Windows setup scripts; deployment approval checkpoint follows validation. |
 | P5 | Lambda verifier (Claude on Bedrock) | Claude Code | P4 | todo | |
 | P3 | Regions, state machine, eval_clips, replay viewer | Claude Code | P2, U2 | todo | |
 | P8 | HLS tile engine, bit-exact C-sim | Codex | P2 | todo | |
