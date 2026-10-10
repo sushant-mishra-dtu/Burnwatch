@@ -2,11 +2,11 @@
 
 The single source of truth for every format shared between folders and machines. Two agents build against this file in parallel, so **a change here is announced (commit message `contracts: …` plus a line under "Plan changes" in PROGRESS.md), never slipped in.** [`tools/contracts.py`](../tools/contracts.py) is the executable copy of sections 1, 3, 5 and 7 (packing): import it, don't retype constants.
 
-Taken from CLAUDE.md and PROMPTS.md (P2–P8). Items marked **⚑F*n*** are conflicts between those sources; each one has a recommended default, which the body below already uses. Items marked **◇** are gaps the prompts left open, which this file fills.
+Taken from CLAUDE.md and PROMPTS.md (P2–P8). Items marked **⚑F*n*** were conflicts between those sources. The user decided them on 10 Oct 2026 at 13:05 (all recommended defaults accepted), and the body below follows those decisions. Items marked **◇** are gaps the prompts left open, which this file fills.
 
-## ⚑ Flagged: needs a decision (user)
+## ⚑ Decisions (accepted 10 Oct 2026, 13:05)
 
-| # | Conflict | Sources | Recommended default (used below) |
+| # | Conflict | Sources | Decision |
 |---|---|---|---|
 | F1 | The engine interface is `score_frame(rgb) -> scores, gate` in CLAUDE.md but `step(rgb, update_this_frame=True) -> (scores, gate, changed)` in P2, P6 and P9 | CLAUDE.md vs P2/P6/P9 | Use `step()`. Update the line in CLAUDE.md |
 | F2 | P0b asks for "registers in the same order as Params", but P8 lists `k_slow, k_fast` first while P2 lists `K_SLOW, K_FAST` after `GATE_TILES` | P0b vs P2/P8 | Put the `Params` fields in P8's register order. This changes nothing functionally |

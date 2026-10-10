@@ -26,7 +26,7 @@ Owners follow Case A in BUILD_PLAN.md section 8 (Vivado on the Codex machine). *
 | ID | Task | Owner | Depends on | Status | Notes |
 |---|---|---|---|---|---|
 | P0 | Repo bootstrap | Claude Code | none | done | Folder layout (+ `overlays/`) with READMEs, root README skeleton, MIT LICENSE, .gitignore, requirements files. Pushed to GitHub `main`. |
-| P0b | `docs/contracts.md` | Claude Code | P0 | waiting: user decision on flags F1–F6 at the top of docs/contracts.md | contracts.md (8 sections) + tools/contracts.py + tests/test_contracts.py (5 pass). UDP frame packet = 3,631 bytes. Body uses the recommended defaults. |
+| P0b | `docs/contracts.md` | Claude Code | P0 | done | docs/contracts.md (8 sections) + tools/contracts.py + tests/test_contracts.py (5 pass). UDP frame packet = 3,631 bytes, ts = integer Unix seconds. User accepted all 6 flagged defaults (F1–F6) at 13:05. |
 | U1 | First-hour checklist (BUILD_PLAN section 3) | You | none | todo | |
 | P1 | camfeed.py + HDMI check | Claude Code | P0 | todo | |
 | P2 | Golden model + tests (spec v1 frozen at H5) | Claude Code | P0b | todo | |
@@ -61,7 +61,9 @@ Owners follow Case A in BUILD_PLAN.md section 8 (Vivado on the Codex machine). *
 
 ## Plan changes
 <!-- One line each: date-time, what changed in PROMPTS.md / BUILD_PLAN.md, and why. -->
+- 10 Oct 13:05, contracts F1–F6 (accepted by user): CLAUDE.md interface line → `step()` (F1); P2 Params in register order + range checks (F2), reset frame sets b = x before scoring (F4), and P2 now also writes tools/dump_golden.py (F6, moved from P8); P3 device obeys verdict.state (F3); P5 verdict adds camera/verifier/evidence, DynamoDB adds time_ist/verify_ms (F5); P6/P7 use tools/contracts.py + BWV1 verdict packet (F5); P4 may create the cloud/verify stub + cameras.json (F6).
 
 ## Log
 <!-- One line per finished task: HH:MM, ID, tool, one-line result. -->
 - 13:00, P0, Claude Code: repo bootstrapped, first commit on `main`, pushed to GitHub.
+- 13:05, P0b, Claude Code: docs/contracts.md + tools/contracts.py, 6 conflicts resolved by the user.

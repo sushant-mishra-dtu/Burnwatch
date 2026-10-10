@@ -23,10 +23,11 @@ docs/       architecture figure, results.md
 
 ## Hard rules
 - `detector/golden.py` is the spec. The scoring path uses integer math only (numpy int32/uint8, no floats). The HLS core must match it bit for bit, and any change to golden.py means regenerating the HLS test vectors.
+- Every shared format (topics, JSON, S3 metadata, UDP packets, HLS registers, test vectors) is defined in `docs/contracts.md`, and `tools/contracts.py` is its executable copy. Code against it, and never invent field names.
 - Every threshold and weight lives in `detector/config.py`. In HLS they are runtime AXI-Lite registers, so tuning never needs a rebuild.
 - Device code runs on PYNQ's Python (armv7l, inside the PYNQ venv): numpy and cv2 are available, but scipy/torch/sklearn are not. Add only pure-Python deps (paho-mqtt, boto3).
 - Secrets (`*.pem`, `*.key`, `.env`, `device/certs/`) are never committed.
 - Honest claims only. Do not claim "ML", "AI on the edge", "low power" or "regulatory-grade". Every number in the README comes from a script in this repo.
-- The ARM-only pipeline must keep working end to end. The PL is an accelerator swapped in behind the same interface (`score_frame(rgb) -> scores[45,80], gate`).
+- The ARM-only pipeline must keep working end to end. The PL is an accelerator swapped in behind the same interface (`TileEngine.step(rgb, update_this_frame) -> (scores[45,80], gate, changed)`, see `docs/contracts.md` section 6).
 - AWS region `ap-south-1` for everything except Bedrock, whose region is set separately (`BEDROCK_REGION`).
 - Keep it small. Before adding a dependency, a service or an abstraction, ask whether the 3-minute video needs it.

@@ -109,15 +109,21 @@ Global gate:
   changed = number of tiles with |xY - bY| > T_GLOBAL
   gate    = changed > GATE_TILES        # reported with THIS frame's scores; the caller ignores gated frames
 
+Reset frame (docs/contracts.md F4): when reset is set, b = x for all three features BEFORE scoring, so that frame
+scores 0 with changed = 0 and gate = False, whatever state was left over. A new engine starts with reset pending.
+
 Baseline update (state carried between frames; prev_gate = gate of the previous frame):
-  if reset:                 b = x for all three features
+  if reset:                 nothing more (b was already set before scoring)
   elif update_this_frame:
       k = K_FAST if prev_gate else K_SLOW
       for tiles where (prev_gate or not flagged):     # flagged tiles are frozen so smoke isn't absorbed
           b += (x - b + (1 << (k-1))) >> k             # numpy >> on int32 is an arithmetic shift
   then prev_gate = gate
 
-Starting constants (config.py, one dataclass Params with these defaults):
+Starting constants (config.py, one dataclass Params with these defaults; fields in HLS register order per
+docs/contracts.md F2: K_SLOW, K_FAST, W_EDGE, W_GREY, SCORE_SHIFT, T_FLAG, SAT_MAX, SAT_TOL, T_GLOBAL, GATE_TILES,
+UPDATE_EVERY_ARM, UPDATE_EVERY_PL; Params validates the ranges in contracts.md section 6; P3's ARM-only constants
+go in a separate dataclass):
   W_EDGE=4, W_GREY=4, SCORE_SHIFT=8, T_FLAG=40, SAT_MAX=40, SAT_TOL=4<<8,
   T_GLOBAL=24<<8, GATE_TILES=1440, K_SLOW=6, K_FAST=2,
   UPDATE_EVERY_ARM=1, UPDATE_EVERY_PL=20   (same forgetting time in seconds at ~3 fps vs 60 fps)
@@ -137,6 +143,8 @@ Tests (tests/test_golden.py, pytest, synthetic frames only):
   7. Determinism: same input sequence → identical outputs.
 
 Also write tools/gen_header.py, which writes hls/config.h (#define for each constant) from config.py.
+Then write tools/dump_golden.py (moved here from P8, docs/contracts.md F6): spec in the P8 "Test vectors" paragraph
+and contracts.md section 8. Generate the --synthetic set first (no clips needed) so Codex can start P8.
 
 Finally, time step() on this laptop for full and fast mode and print ms/frame. After the tests pass, show me a heat map of test 1 rendered with cv2 (save to docs/golden_test1.png).
 ````
@@ -161,8 +169,9 @@ Build the ARM-side logic on top of detector/golden.py. Read detector/golden.py a
 2. detector/state.py: StateMachine with states CLEAR, SUSPECT, CONFIRMED, REJECTED
    - CLEAR → SUSPECT when there is a candidate AND >= 120 s since the last upload for this camera. It emits an "upload" action with the event dict:
      {camera, state, score (mean score in region / 255, 2 decimals), tiles, bbox, s3_key "frames/<camera>/<ts>.jpg", ts}
-   - SUSPECT → CONFIRMED on a verdict with is_smoke and confidence >= 0.6.
-   - SUSPECT → REJECTED on a verdict with not is_smoke: add the region's tiles to the ignore mask for 180 s, then CLEAR.
+   - SUSPECT → CONFIRMED on a verdict whose state is "CONFIRMED" (the cloud applies CONF_THRESHOLD; docs/contracts.md F3).
+   - SUSPECT → REJECTED on a verdict whose state is "REJECTED": add the region's tiles to the ignore mask for 180 s, then CLEAR.
+   - Ignore a verdict whose ts isn't the open event's ts. Event/verdict fields: docs/contracts.md section 2 (ts = integer Unix seconds).
    - CONFIRMED → CLEAR after the region has been gone for 60 s.
    - SUSPECT with no verdict for 90 s stays SUSPECT (amber) and emits "verdict_timeout" once.
    - Pure logic: actions are returned, never executed (no network, no LEDs). Unit tests drive it with fake clocks and verdicts.
@@ -217,6 +226,8 @@ device/.env.example: same keys as device/.env with placeholder values (committed
 
 cloud/README.md: exact deploy commands (sam build; sam deploy --guided first time), then the setup scripts, then "confirm the SNS email". Also the IoT MQTT test client steps for the video (subscribe to burnwatch/#).
 
+Formats (topics, policy, S3 keys/metadata, DynamoDB): docs/contracts.md sections 1–4. You may create cloud/verify/app.py
+(stub) and cloud/verify/cameras.json; Claude Code owns cloud/verify/ from P5 on (contracts.md F6).
 Before deploying: show me the template and the IAM policies and wait for my OK. Then deploy, run the setup scripts, and verify: publish a test message to burnwatch/test from the laptop using device/.env (small paho-mqtt script cloud/mqtt_smoke_test.py) and confirm it appears in the IoT test client.
 ````
 
@@ -239,11 +250,11 @@ Flow per S3 ObjectCreated event (key frames/<camera>/<ts>.jpg):
    - Do NOT send temperature/top_p/top_k: Claude Haiku 5.5 rejects non-default sampling parameters. effort "low", max_tokens 1024.
    - Check stop_reason before reading content (handle "refusal" and "max_tokens" as a failed verification).
 3. If the Bedrock call fails: fall back to Rekognition DetectLabels (MinConfidence 60). is_smoke = any label named Smoke; confidence = that label's confidence/100; likely_source "unclear"; evidence lists the top labels; complaint_text "". Record verifier="rekognition" vs "claude".
-4. PutItem to DynamoDB: camera, ts, iso time in IST, score, tiles, bbox, s3_key, is_smoke, confidence, likely_source, evidence, complaint_text, verifier, latency_ms.
+4. PutItem to DynamoDB: camera, ts, time_ist, score, tiles, bbox, s3_key, is_smoke, confidence, likely_source, evidence, complaint_text, verifier, latency_ms, verify_ms (types and definitions: docs/contracts.md section 4).
 5. If is_smoke and confidence >= CONF_THRESHOLD: SNS publish.
    Subject: "BurnWatch: possible open burning at <camera name>".
    Body: time (IST), camera name + address (cameras.json), likely source, evidence, a presigned GET URL for the photo (expires in 12 h), and the complaint draft under the heading "DRAFT – review before you submit it to your RWA or municipal helpline. Nothing has been sent automatically."
-6. Publish the verdict to IoT topic burnwatch/<camera>/verdict via boto3 iot-data (endpoint_url https://IOT_ENDPOINT): {ts, is_smoke, confidence, likely_source, state: "CONFIRMED" or "REJECTED"}.
+6. Publish the verdict to IoT topic burnwatch/<camera>/verdict via boto3 iot-data (endpoint_url https://IOT_ENDPOINT), QoS 1: {camera, ts, is_smoke, confidence, likely_source, state: "CONFIRMED" if is_smoke and confidence >= CONF_THRESHOLD else "REJECTED", verifier, evidence} (docs/contracts.md section 2, F3/F5). If both Bedrock and Rekognition fail, publish nothing; the device times out.
 7. Log one line of JSON with the full verdict (this is filmed in CloudWatch for the video).
 
 Prompt text for Claude (keep it in a constant, inject camera name, local time, bbox):
@@ -273,7 +284,7 @@ PART A: device/cloud.py (test it from the laptop first, with a JPEG from testdat
   Upload first, then publish the event.
 - Offline queue: if either fails, write event.json + frame.jpg under /home/xilinx/burnwatch/queue/<ts>/ (on the laptop: ./queue/) and retry oldest-first every 30 s once connected. Survives restarts.
 - On startup, check that the system clock is plausible (year >= 2026). If not, log a loud error explaining that TLS will fail and how to fix it (NTP, or `sudo date -s` from an HTTP Date header).
-- cloud_selftest.py: connect, publish a test event, upload a sample JPEG, wait up to 60 s for the verdict, and print it.
+- cloud_selftest.py (client_id burnwatch-<camera>-selftest so it can run while the board is connected): connect, publish a test event, upload a sample JPEG, wait up to 60 s for the verdict, and print it.
 
 PART B: device/main.py (on the PYNQ)
 - Args: --mode arm|pl (pl imports device/pl_engine.py, which comes later; ARM is the default), --camera, --viewer-ip, --fps-cap, --eval-log path.csv.
@@ -284,6 +295,7 @@ PART B: device/main.py (on the PYNQ)
   Verdicts from the queue go to the state machine.
 - LEDs (base.rgbleds[4] and [5], check the indices on the board): CLEAR green, SUSPECT yellow, CONFIRMED red, REJECTED blue, gated frame = brief white blink on LED 5.
 - UDP to --viewer-ip:9999 every processed frame: struct header (magic b"BW01", frame_no u32, ts f64, state u8, gate u8, fps f32, mode u8, bbox 4×u16) + 3600 uint8 scores. Never video.
+  Build it with tools/contracts.py (pack_viewer_packet; docs/contracts.md section 5). When a verdict arrives, also send one BWV1 verdict packet (pack_verdict_packet, contracts.md F5).
 - Logs one line per state change; heartbeat every 60 s.
 - --eval-log writes per-frame (ts, state, gate, region_tiles) for the real-path test table (P11).
 - Ctrl-C closes hdmi_in and turns the LEDs off (try/finally).
@@ -301,9 +313,9 @@ Write tools/viewer.py, the laptop-side live view that is filmed for the video. I
 
 - Laptop display setup: Extend mode. The HDMI display (going to the PYNQ) shows tools/camfeed.py full screen; the viewer runs on the laptop's own screen.
 - Capture the HDMI monitor with mss (--monitor N; reuse the same enumeration as camfeed.py --list), downscale to 960x540 for display.
-- Receive UDP packets on :9999 in a background thread (format defined in device/main.py; import the struct format from a shared module instead of duplicating it).
+- Receive UDP packets on :9999 in a background thread (format in docs/contracts.md section 5; use tools/contracts.unpack_viewer_packet, which also decodes BWV1 verdict packets).
 - Draw: tiles with score >= T_FLAG as a translucent heat map (cv2 colormap) on a 45x80 grid, the region bbox, a big state badge (CLEAR green / SUSPECT amber / CONFIRMED red / REJECTED blue), "GATED" when gate=1.
-  A side panel shows: device fps, mode (ARM or PL), "bytes received per frame: 3,6xx", "frames sent to cloud: N" (count SUSPECT transitions), the last verdict text.
+  A side panel shows: device fps, mode (ARM or PL), "bytes received per frame: 3,6xx", "frames sent to cloud: N" (count SUSPECT transitions), the last verdict text (likely_source, confidence and evidence from the latest BWV1 packet).
 - If no packet arrives for 3 s, show "NO SIGNAL FROM DEVICE".
 - Hotkeys: r start/stop recording the viewer window to an mp4 in recordings/, q quit.
 - Also test it without hardware: tools/fake_device.py replays a clip through golden + regions + state and sends the same UDP packets to localhost.
@@ -316,7 +328,7 @@ Write tools/viewer.py, the laptop-side live view that is filmed for the video. I
 ````text
 Implement the PL tile engine in Vitis HLS in hls/, matching detector/golden.py (spec v1) bit for bit in FULL mode (1280x720, TILE=16). Read detector/golden.py, detector/config.py and hls/config.h first. Part xc7z020clg400-1, clock 10 ns.
 
-Interface (top function tile_engine):
+Interface (top function tile_engine; exact signature, register order and widths: docs/contracts.md section 7; reset frames follow contracts.md F4, b = x before scoring):
 - frame: const ap_uint<32>*, m_axi bundle=gmem0, offset=slave, depth 921600. One pixel per 32-bit word, packed R | G<<8 | B<<16 (bits 31:24 ignored). Row-major.
 - scores: ap_uint<8>*, m_axi bundle=gmem1, offset=slave, depth 3600. Row-major 45x80.
 - s_axilite (bundle=control) scalars: reset, update_this_frame, k_slow, k_fast, w_edge, w_grey, score_shift, t_flag, sat_max, sat_tol, t_global, gate_tiles.
@@ -331,7 +343,7 @@ Implementation notes:
 - Signed arithmetic: compute edge_drop, grey_shift and the baseline delta in ap_int with enough bits. The baseline update rounds with + (1 << (k-1)) and then an arithmetic right shift, exactly like numpy.
 - gate is decided at the end of the frame from changed and becomes prev_gate for the next call.
 
-Test vectors: tools/dump_golden.py
+Test vectors: tools/dump_golden.py (written by Claude Code at the end of P2, contracts.md F6; Codex runs it and reports problems instead of editing it)
 - Takes a clip (or a folder of PNGs), resizes to 1280x720, runs golden FULL mode for a sequence of >= 40 frames (including a gated frame: insert a +40 brightness frame at index 20, and use update_this_frame on every frame), and writes testdata/golden/<name>/:
   frame_XXXX.bin (uint32 packed words), scores_XXXX.bin (3600 bytes), expect.txt (per frame: gate changed), params.txt (key value per line).
 - Generate vectors for at least: one dhoop clip, the person_walk clip and a synthetic textured clip.
