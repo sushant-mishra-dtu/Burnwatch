@@ -1,0 +1,17 @@
+clip,suspect_t,on_smoke,notes
+20261011_102913,9.7,no,box is on the ghost of the red decoration that left the view after the reset frame
+20261011_102929,8.3,no,box is on the incense holder; camera drift
+firesense/pos/testpos01.817,14.0,partly,right edge of the plume plus bushes; handheld
+firesense/pos/testpos02.818,7.0,yes,on the smoke above the roof
+firesense/pos/testpos04.820,46.0,partly,top edge of the plume plus grass; handheld
+firesense/pos/testpos05.821,13.4,no,dark floor corner; the smoke is under the roof
+firesense/pos/testpos07.823,23.4,no,on the person walking past; the smoke is at the bucket
+firesense/pos/testpos08.824,15.0,yes,on the smoke column
+firesense/pos/testpos09.825,13.0,partly,top of the plume plus background; handheld
+firesense/pos/testpos10.826,7.7,yes,on the smoke; handheld
+firesense/pos/testpos13.829,6.3,yes,on the smoke; handheld
+firesense/neg/testneg01.807,6.7,no,tree crown in wind
+firesense/neg/testneg02.808,24.4,no,road surface beside the people
+firesense/neg/testneg07.813,30.4,no,cloud behind bare branches
+firesense/neg/testneg08.814,13.7,no,waving flags
+firesense/neg/testneg09.815,17.0,no,cars

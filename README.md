@@ -1,6 +1,6 @@
 # BurnWatch
 
-**BurnWatch is an FPGA-oriented open-burning smoke detector prototype.** Its integer reference model and standalone RTL scoring core turn a 1280×720 RGB frame into a 45×80 grid of 3,600 tile scores. The current repository validates the detector datapath in simulation and contains camera/HDMI and AWS provisioning utilities. The ARM event runtime, cloud verifier and final PYNQ overlay are still separate follow-up work.
+**BurnWatch is an FPGA-oriented open-burning smoke detector prototype.** Its integer reference model and standalone RTL scoring core turn a 1280×720 RGB frame into a 45×80 grid of 3,600 tile scores. The current repository validates the detector datapath in simulation and contains camera/HDMI and AWS provisioning utilities. The ARM region tracker and alert state machine run offline on recorded clips; the on-device runtime, cloud verifier and final PYNQ overlay are still follow-up work.
 
 > **Status boundary:** this README distinguishes what is implemented and tested from what is planned. The checked-in RTL simulation is not a live PYNQ deployment and the current Lambda is intentionally a stub.
 
@@ -13,7 +13,7 @@ The defensible product goal is not to claim a regulatory air-quality measurement
 ```text
 camera sees a suspected burn
 → edge hardware scores the scene
-→ a future ARM runtime tracks the region
+→ the ARM region tracker/state machine raises SUSPECT (offline on clips so far)
 → a future cloud verifier checks one suspect frame
 → a human receives evidence and decides what to report
 ```
@@ -34,7 +34,7 @@ camera sees a suspected burn
 | Native synthesis | Completed, but timing and package-I/O limits are not met |
 | OOC placement/routing | Completed for the isolated core, but 100 MHz timing fails |
 | ZedBoard + VIO package | Implemented as a separate simulated-input/hardware package; board run remains unverified in this checkout |
-| ARM region/state runtime | Not implemented in this checkout |
+| ARM region tracker + state machine | Implemented in `detector/regions.py` and `detector/state.py` (16 unit tests); evaluated offline on 28 labelled clips in [`docs/test_table.md`](docs/test_table.md); not yet running on the PYNQ |
 | Device MQTT/S3/offline queue runtime | Not implemented in this checkout |
 | Lambda verifier | Stub only; raises `NotImplementedError` intentionally |
 | Final PYNQ `.bit`/`.hwh` overlay | Not present |
@@ -49,7 +49,7 @@ The intended full system has five boundaries:
 
 1. **Input:** `tools/camfeed.py` displays a camera or clip at 1280×720 for HDMI capture.
 2. **Edge scoring:** the Python golden model and standalone RTL compute tile-level visual features and scores.
-3. **Runtime decision:** an ARM-side region tracker/state machine is planned but not currently checked in.
+3. **Runtime decision:** an ARM-side region tracker and state machine (`detector/regions.py`, `detector/state.py`) turn scores into SUSPECT events; so far they run offline through `tools/eval_clips.py`.
 4. **Cloud evidence path:** AWS provisioning and SAM infrastructure exist, but the device uploader and verifier are not complete.
 5. **Separate ZedBoard package:** `zedboard/burnwatch_zed_vio/` drives the RTL with on-chip synthetic scenes and VIO; it does not use the Zynq PS or a camera.
 
@@ -110,8 +110,8 @@ Attached FPGA evidence is included here:
 | Pixel feature extraction | SystemVerilog RTL, ZedBoard Verilog package, Vitis HLS core | RTL simulation and HLS C-simulation vectors |
 | Tile scoring/baselines | SystemVerilog RTL, ZedBoard Verilog package, Vitis HLS core | RTL simulation and HLS C-simulation vectors |
 | Python reference | NumPy integer implementation | `tests/test_golden.py` |
-| ARM region grouping | Planned | No `detector/regions.py` in this checkout |
-| ARM state machine | Planned | No `detector/state.py` in this checkout |
+| ARM region grouping | Python/OpenCV, `detector/regions.py` | `tests/test_regions.py`, offline clip table |
+| ARM state machine | Python, `detector/state.py` | `tests/test_state.py`, offline clip table |
 | PYNQ AXI driver | Planned | No `device/pl_engine.py` in this checkout |
 | PYNQ final overlay | Planned | No `.bit`/`.hwh` pair in `overlays/` |
 
@@ -199,10 +199,10 @@ See [`overlays/rtl_sim/README.md`](overlays/rtl_sim/README.md) for vector genera
 ## Known limitations
 
 - Smoke detection is a visual heuristic, not a regulatory-grade smoke or AQI measurement.
-- The Python reference and RTL simulation use synthetic scenes; no field accuracy, false-positive rate or missed-detection rate is claimed.
+- The offline clip evaluation ([`docs/test_table.md`](docs/test_table.md)) is small and weak: 19 smoke and 9 non-smoke clips, mostly FIRESENSE videos upscaled to 720p. In the by-eye review, the alarm region is on the smoke in 4 of the 11 detected smoke clips, and 5 of the 9 non-smoke clips raise a false SUSPECT. No field accuracy is claimed.
 - The standalone RTL core has no AXI/PS wrapper and has not produced a deployable PYNQ overlay.
 - Synthesis and OOC timing do not meet the 100 MHz target.
-- The current repository does not contain the ARM region/state runtime.
+- The region tracker and state machine run only offline on clips; the PYNQ device loop is not written yet.
 - The AWS Lambda verifier is a stub; S3 upload does not yet produce a verdict.
 - The ZedBoard package uses simulated input and VIO, not a camera.
 - The plan’s IAM user is a hackathon shortcut. Production should use short-lived device credentials.

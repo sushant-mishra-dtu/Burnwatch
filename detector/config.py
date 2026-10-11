@@ -65,4 +65,26 @@ REGISTER_FIELDS = ("K_SLOW", "K_FAST", "W_EDGE", "W_GREY", "SCORE_SHIFT",
                    "T_FLAG", "SAT_MAX", "SAT_TOL", "T_GLOBAL", "GATE_TILES")
 
 
-# ARM-only constants for regions and the state machine: added in P3 as a separate dataclass.
+@dataclass(frozen=True)
+class ArmParams:
+    """ARM-only constants for detector/regions.py and detector/state.py (P3). Floats are fine: never in HW.
+
+    The region mask uses Params.T_FLAG on the smoothed scores, so one threshold serves the PL and the ARM.
+    """
+    SMOOTH: float = 0.4             # s = (1 - SMOOTH)*s + SMOOTH*scores, per processed frame
+    MIN_TILES: int = 4              # smallest 8-connected component kept as a region
+    PERSIST_S: float = 6.0          # a region must last this long before it can be a candidate
+    GROW_FRAC: float = 0.25         # ... and over that window grow by this fraction of its area,
+    RISE_TILES: int = 1             # ... or move its top edge up by this many tiles,
+    CENTROID_RISE: float = 0.0      # ... or move its centroid row up by more than this (tiles)
+    UPLOAD_COOLDOWN_S: float = 120  # CLEAR -> SUSPECT at most once per this many seconds per camera
+    VERDICT_TIMEOUT_S: float = 90   # SUSPECT with no verdict this long emits verdict_timeout (once)
+    IGNORE_S: float = 180           # REJECTED: the region's tiles are ignored this long
+    CLEAR_AFTER_S: float = 60       # CONFIRMED -> CLEAR once the region has been gone this long
+
+    def __post_init__(self):
+        if not 0 < self.SMOOTH <= 1:
+            raise ValueError(f"SMOOTH={self.SMOOTH} must be in (0, 1]")
+        for f in fields(self):
+            if f.name != "SMOOTH" and getattr(self, f.name) < 0:
+                raise ValueError(f"{f.name}={getattr(self, f.name)} must be >= 0")

@@ -274,7 +274,10 @@ GATE_TILES 1440
 The testbench resets on the frames where `reset` = 1, compares scores, gate and changed exactly, prints the first 10 mismatches as `(frame, tile_row, tile_col, expected, got)`, and returns non-zero on any mismatch.
 
 ### Clip labels (`testdata/labels.csv`, tracked)
-Columns: `clip,label,smoke_start_s,smoke_end_s,notes`. `clip` is the file basename without `.mp4`, from `testdata/clips/`. `label` is one of `smoke, person, cloth, lights, bump, exposure, steam, empty`. The smoke times are seconds from the clip start, left empty for non-smoke clips.
+Columns: `clip,label,smoke_start_s,smoke_end_s,notes`. `clip` is the video's path under `testdata/clips/` with forward slashes and without its extension (`.mp4`, `.avi`, …), e.g. `20261011_102856` or `firesense/pos/testpos02.818`. `label` is one of `smoke, person, cloth, lights, bump, exposure, steam, empty, other` (`other`: non-smoke scene motion such as traffic, trees or clouds; added 11 Oct for the FIRESENSE negatives). The smoke times are seconds from the clip start, left empty for non-smoke clips.
+
+### SUSPECT review (`testdata/suspect_review.csv`, tracked)
+Columns: `clip,suspect_t,on_smoke,notes`. One row per SUSPECT that `eval_clips.py --snapshots` saved and a person checked by eye. `clip` as in `labels.csv`; `suspect_t` = seconds from the clip start, 1 decimal, as in the snapshot file name; `on_smoke` is `yes`, `partly` or `no` (is the region box on the smoke?). `eval_clips.py` matches rows on (`clip`, `suspect_t`), so a SUSPECT that moves after a parameter change shows as not reviewed.
 
 ### Device eval log (`main.py --eval-log path.csv`, read by `eval_clips.py --from-logs`)
 Header row, then one row per processed frame: `ts,frame_no,state,gate,region_tiles` (ts float Unix seconds on the device clock; state name; gate 0/1; region_tiles = tiles in the tracked region, 0 if none).

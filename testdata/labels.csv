@@ -1,0 +1,29 @@
+clip,label,smoke_start_s,smoke_end_s,notes
+20261011_101936,smoke,0,,own: incense by a steel bowl; portrait; handheld; 5.9 s
+20261011_101949,smoke,0,,own: incense + diya; thin smoke; 5.7 s
+20261011_101958,smoke,0,,own: incense + diya; portrait; handheld; 5.0 s
+20261011_102856,smoke,0,,own: incense-stick holder; slow camera drift
+20261011_102913,smoke,0,,own: incense-stick holder; slow camera drift
+20261011_102929,smoke,0,,own: incense-stick holder; camera drift
+firesense/pos/testpos01.817,smoke,0.5,,FIRESENSE: white smoke grenade on a lawn; handheld
+firesense/pos/testpos02.818,smoke,0,,FIRESENSE: NIST building fire; black then grey smoke; fixed
+firesense/pos/testpos03.819,smoke,0,,FIRESENSE: ground fire behind a wall; faint smoke; fixed
+firesense/pos/testpos04.820,smoke,0,,FIRESENSE: smoke grenade on grass; handheld
+firesense/pos/testpos05.821,smoke,0,,FIRESENSE: smoke under a warehouse roof; CCTV with drawn overlay; fixed
+firesense/pos/testpos06.822,smoke,0,,FIRESENSE: smoke from a bucket; people walking; fixed
+firesense/pos/testpos07.823,smoke,0,,FIRESENSE: smoke from a bucket; person nearby; fixed
+firesense/pos/testpos08.824,smoke,0,,FIRESENSE: blue then white smoke from a canister; person at start; fixed
+firesense/pos/testpos09.825,smoke,0,,FIRESENSE: smoke grenade on grass; handheld
+firesense/pos/testpos10.826,smoke,0,,FIRESENSE: smoke column in a clearing; handheld
+firesense/pos/testpos11.827,smoke,0,,FIRESENSE: smoke from a barrel; handheld
+firesense/pos/testpos12.828,smoke,0,,FIRESENSE: smoke canister by a fence; handheld
+firesense/pos/testpos13.829,smoke,0,,FIRESENSE: smoke over a garden; handheld
+firesense/neg/testneg01.807,other,,,FIRESENSE: tree and clouds in wind
+firesense/neg/testneg02.808,person,,,FIRESENSE: three people walk in and stand on a road
+firesense/neg/testneg03.809,empty,,,FIRESENSE: office with a person at a desk; only ~7 s decodes
+firesense/neg/testneg04.810,other,,,FIRESENSE: field and bushes; a box is placed in view
+firesense/neg/testneg05.811,other,,,FIRESENSE: reeds moving in wind
+firesense/neg/testneg06.812,other,,,FIRESENSE: highway traffic
+firesense/neg/testneg07.813,other,,,FIRESENSE: bare trees and white clouds
+firesense/neg/testneg08.814,cloth,,,FIRESENSE: flags waving
+firesense/neg/testneg09.815,other,,,FIRESENSE: highway traffic

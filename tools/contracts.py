@@ -170,4 +170,4 @@ def unpack_rgb_words(words, h=IMG_H, w=IMG_W):
 # --- Logs and labels ---------------------------------------------------------------
 EVAL_LOG_COLUMNS = ("ts", "frame_no", "state", "gate", "region_tiles")
 LABEL_COLUMNS = ("clip", "label", "smoke_start_s", "smoke_end_s", "notes")
-LABELS = ("smoke", "person", "cloth", "lights", "bump", "exposure", "steam", "empty")
+LABELS = ("smoke", "person", "cloth", "lights", "bump", "exposure", "steam", "empty", "other")
