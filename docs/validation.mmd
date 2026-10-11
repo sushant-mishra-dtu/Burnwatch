@@ -1,0 +1,18 @@
+flowchart TD
+    PY[Python golden model<br/>detector/golden.py]
+    VEC[Generated vectors<br/>tools/dump_golden.py]
+    RTL[Standalone SystemVerilog RTL<br/>overlays/rtl_sim]
+    SIM[Vivado/XSim simulation<br/>80 frames, 288,000 scores]
+    SYN[Native synthesis<br/>resource report]
+    OOC[Out-of-context route<br/>internal core only]
+    AXI[AXI/PS wrapper<br/>not implemented]
+    BOARD[Final PYNQ overlay<br/>not implemented]
+
+    PY --> VEC --> RTL --> SIM
+    RTL --> SYN --> OOC
+    OOC -.-> AXI -.-> BOARD
+
+    classDef pass fill:#e7f7e7,stroke:#238636,color:#111;
+    classDef limitation fill:#fff4ce,stroke:#9a6700,color:#111;
+    class PY,VEC,RTL,SIM pass;
+    class SYN,OOC,AXI,BOARD limitation;

@@ -1,0 +1,24 @@
+flowchart LR
+    CAM[Phone camera or CCTV source]
+    LAP[Laptop camera feed<br/>1280 x 720 HDMI output]
+    HDMI[HDMI input validation<br/>PYNQ base overlay]
+    PL[FPGA scoring core<br/>luma + saturation + Sobel<br/>16 x 16 tiles]
+    ARM[Planned ARM runtime<br/>region/state logic]
+    AWS[AWS provisioning and transport<br/>IoT Core + S3]
+    VERIFY[Planned verifier<br/>Lambda + Bedrock/Nemotron/Rekognition]
+    STORE[DynamoDB + SNS<br/>planned verdict path]
+    VIO[ZedBoard VIO package<br/>simulation/test control]
+
+    CAM --> LAP --> HDMI --> PL
+    PL -->|3,600 tile scores| ARM
+    ARM -.->|planned event/JPEG| AWS
+    AWS -.-> VERIFY -.-> STORE
+    STORE -.->|planned verdict| ARM
+    VIO -.->|separate simulation harness| PL
+
+    classDef implemented fill:#e7f7e7,stroke:#238636,color:#111;
+    classDef planned fill:#fff4ce,stroke:#9a6700,color:#111;
+    classDef separate fill:#e8eefe,stroke:#57606a,color:#111;
+    class CAM,LAP,HDMI,PL,VIO implemented;
+    class ARM,AWS,VERIFY,STORE planned;
+    class VIO separate;

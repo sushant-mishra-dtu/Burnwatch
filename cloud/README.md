@@ -1,9 +1,6 @@
-# BurnWatch AWS setup (P4)
+# BurnWatch AWS setup (P4 scaffolding)
 
-All resources run in `ap-south-1`, Bedrock included. The verifier is Claude on
-Bedrock, with an NVIDIA Nemotron fallback and Rekognition as the last resort.
-The Lambda is a P4 stub until Claude Code completes P5.
-Uploading a JPEG now raises an explicit error; it does not produce a verdict.
+All resources run in `ap-south-1`, Bedrock included. The intended verifier is Claude on Bedrock, with an NVIDIA Nemotron fallback and Rekognition as the last resort. The current Lambda is a P4 stub: `cloud/verify/app.py` logs an error and raises `NotImplementedError` for every invocation. Uploading a JPEG therefore does not yet produce a verdict.
 
 ## Review checkpoint
 
@@ -24,6 +21,8 @@ before deployment or credential provisioning. The exact policies are in
 | IoT certificate | `iot:Publish`, `iot:Receive` | `topic/burnwatch/*` |
 | IoT certificate | `iot:Subscribe` | `topicfilter/burnwatch/*` |
 | IAM user `burnwatch-device` | `s3:PutObject` only | Stack bucket's `frames/*` |
+
+This table describes the infrastructure and policies, not a completed application flow. No current device code uploads a suspect frame, and no current Lambda code writes DynamoDB, publishes SNS or returns an IoT verdict.
 
 The verifier calls Claude through the anthropic SDK's `AnthropicBedrockMantle`
 client, which signs requests to `https://bedrock-mantle.ap-south-1.api.aws/anthropic/v1/messages`.
@@ -147,5 +146,4 @@ does not mean that email delivery is ready.
    `verdict`. Only `frames/*.jpg` uploads trigger verification; the MQTT event
    message itself does not invoke Lambda.
 
-The smoke test checks real MQTT delivery. SNS email, Claude/Nemotron verification and
-an S3 event are checked after P5/P6, rather than reported as passing from mocks.
+The smoke test checks real MQTT delivery only. SNS email, Claude/Nemotron verification, DynamoDB persistence, S3-triggered Lambda execution and verdict return remain unverified until the verifier and device runtime are implemented.

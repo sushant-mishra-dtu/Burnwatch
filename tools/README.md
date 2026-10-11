@@ -1,10 +1,22 @@
 # tools/
 
-Laptop-side tools:
+Implemented utilities:
 
-- `camfeed.py`: shows the phone camera (or a clip) full screen on the HDMI output that feeds the PYNQ.
-- `viewer.py`: live view drawn from the 3,600 tile scores the box sends over UDP.
-- `eval_clips.py`: runs the detector offline on labelled clips and writes the test table.
-- `dump_golden.py`: writes the HLS test vectors from `detector/golden.py`.
-- `bench.py`: throughput measurements for `docs/results.md`.
-- `gen_header.py`: writes `hls/config.h` from `detector/config.py`.
+| File | What it does |
+|---|---|
+| `camfeed.py` | Opens a webcam or clip, letterboxes to 1280×720 and displays it full-screen on a selected monitor |
+| `contracts.py` | Shared MQTT/S3/UDP/RGB-packing constants and helpers |
+| `dump_golden.py` | Generates deterministic synthetic, clip or PNG golden vectors and state dumps |
+| `gen_header.py` | Generates/checks `hls/config.h` from `detector/config.py` |
+
+Documented but absent from this checkout:
+
+```text
+viewer.py
+eval_clips.py
+bench.py
+replay_viewer.py
+cloud_selftest.py
+```
+
+Therefore the repository currently has no checked-in live score viewer, field-clip evaluator or performance benchmark. Do not link those commands as runnable until their files are added.

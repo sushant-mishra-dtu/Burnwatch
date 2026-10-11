@@ -1,5 +1,7 @@
 # BurnWatch tile engine on the ZedBoard: architecture
 
+> This document describes the separate PL-only ZedBoard/VIO package. The current main checkout does not include the ARM region/state runtime, device cloud client or a verified physical-board run for this package.
+
 ## The two hardware parts
 
 In BurnWatch, the FPGA's job is the **tile engine** (`detector/golden.py` is its spec). It turns every
@@ -23,7 +25,7 @@ features, score and baselines.
 | Start/stop, test selection, result read-back | FPGA controller (`bw_ctrl`, `bw_test_rom`) driven from the **VIO** (stands in for the ARM driver) |
 | Register values (K_SLOW ... GATE_TILES) | constants in `bw_top_zed.v` (detector/config.py defaults); T_FLAG from the VIO |
 | Camera capture, HDMI input, DDR frame buffers | not in this package (the real system: laptop/phone -> HDMI -> board) |
-| Region grouping, SUSPECT/CONFIRMED state machine, LEDs, MQTT, S3 upload | **software** (ARM/Python, `detector/regions.py`, `state.py`, `device/`), not on the FPGA |
+| Region grouping, SUSPECT/CONFIRMED state machine, LEDs, MQTT, S3 upload | **planned software** (ARM/Python, future `detector/regions.py`, `state.py`, `device/`), not on the FPGA |
 | Cloud verification (Claude on Amazon Bedrock, NVIDIA Nemotron fallback), DynamoDB, email | **software** (AWS Lambda), not on the FPGA |
 
 The Zynq PS (ARM) is not used in this package. The design is PL-only: one clock pin, eight LEDs, and the VIO over JTAG.

@@ -1,11 +1,21 @@
 # device/
 
-The PYNQ-Z2 runtime: HDMI capture loop, LEDs, MQTT to AWS IoT Core, S3 upload, offline queue, and `pl_engine.py` (the PL tile engine behind the same `step()` interface as `detector/golden.py`).
+Current device-side code is limited to **PYNQ HDMI input validation** and a launcher. The full runtime described in the project plan—ARM/PL frame scoring, LEDs, MQTT, S3 upload, offline queue and verdict handling—is not present in this checkout.
 
 | File | What it does |
 |---|---|
-| `run.sh` | Runs any device script as root inside the PYNQ venv, from the repo root (`PYTHONPATH` set so `detector/` imports work). |
-| `hdmi_check.py` | Locks to HDMI IN, prints the video mode, times 100 `readframe()` calls, saves 3 PNGs. |
+| `run.sh` | Runs a device script as root inside the PYNQ venv, from the repo root, with `PYTHONPATH` set. |
+| `hdmi_check.py` | Loads the PYNQ base overlay, locks to HDMI IN, times `readframe()` calls, saves PNGs and prints RGB means. |
+| `.env.example` | Configuration template for the planned AWS device client; no current runtime consumes it. |
+
+Not currently implemented:
+
+```text
+device/main.py
+device/pl_engine.py
+device/cloud.py
+device/burnwatch.service
+```
 
 ## Copy the repo to the board
 
@@ -46,6 +56,8 @@ Update later with `git pull` on the board, or run the same `scp` again.
    ```bash
    scp "xilinx@<pynq-ip>:/home/xilinx/burnwatch/frames/*.png" .
    ```
+
+The HDMI check proves input capture only. It does not prove smoke detection, FPGA acceleration, cloud upload or board-level end-to-end behavior.
 
 ## Troubleshooting
 

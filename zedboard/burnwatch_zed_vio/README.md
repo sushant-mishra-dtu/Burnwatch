@@ -6,6 +6,8 @@ buttons or other peripherals.
 
 ## 1. What is implemented
 
+> **Scope note:** this is a separate PL-only validation package. It uses simulated on-chip input and VIO; it is not the PYNQ-Z2 HDMI/AWS runtime. The current main checkout does not include a verified ZedBoard bitstream or physical board run.
+
 The FPGA's job in BurnWatch is the **tile engine** (spec: `detector/golden.py`; a verbatim copy is in
 `model/detector/`). It turns each 1280x720 frame into 3,600 tile smoke scores. The tile engine has two parts,
 and both are fully implemented in synthesizable Verilog-2001:
