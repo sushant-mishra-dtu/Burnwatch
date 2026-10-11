@@ -6,7 +6,7 @@ Current device-side code is limited to **PYNQ HDMI input validation** and a laun
 |---|---|
 | `run.sh` | Runs a device script as root inside the PYNQ venv, from the repo root, with `PYTHONPATH` set. |
 | `hdmi_check.py` | Loads the PYNQ base overlay, locks to HDMI IN, times `readframe()` calls, saves PNGs and prints RGB means. |
-| `.env.example` | Configuration template for the planned AWS device client; no current runtime consumes it. |
+| `.env.example` | Template for `device/.env`. `cloud/setup_iot.py` and `cloud/setup_device_iam.py` write that file, and `cloud/mqtt_smoke_test.py` reads it, today; the planned device runtime will read it too. |
 
 Not currently implemented:
 

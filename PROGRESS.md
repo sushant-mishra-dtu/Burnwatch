@@ -43,7 +43,7 @@ Owners follow Case A in BUILD_PLAN.md section 8 (Vivado on the Codex machine). *
 | P10 | Level-3 live integration (stretch, only if before ~H17) | Claude Code | P9 | todo | |
 | GATE-H20 | PL cut decision | Claude Code | P6 | todo | Run at H20 even if P9 isn't done |
 | P11 | Benchmarks + final test table | Claude Code | P6, GATE-H20 | todo | |
-| P12 | README + architecture figure | Claude Code | P11, R1 | todo | |
+| P12 | README + architecture figure | Claude Code | P11, R1 | todo | Interim README.md and docs/architecture.svg, fpga_datapath.svg, validation.svg already exist: revise them, don't start over. Still missing for the prompt: docs/results.md + docs/test_table.md (P11), docs/sources.md (R1; draft facts in `research_notes/BurnWatch citable sources/`), docs/demo.gif, event/verdict JSON from real AWS logs. |
 | P13 | Video script + shot list | Claude Code | P11 | todo | |
 | U3 | Record, edit (≤ 3:00), check the repo is public, submit | You | P12, P13 | todo | |
 | G1 | GaugeEye pivot (only if GATE-H8 says pivot) | Claude Code | GATE-H8 | skipped: not pivoting | |
@@ -107,3 +107,4 @@ Owners follow Case A in BUILD_PLAN.md section 8 (Vivado on the Codex machine). *
 - 00:40, RTL-OOC, Codex: saved reproducible OOC workflow and routed checkpoint/reports; internal routing complete, 100 MHz timing failure and full-system limits documented in overlays/rtl_sim/OOC_VALIDATION.md.
 - 00:50, RTL-OOC files, Claude Code: copied Codex's finished core-only OOC place-and-route results into overlays/rtl_sim (OOC_VALIDATION.md, reports/ooc_*, README section). All nets routed, 0 routing errors; setup WNS -20.092 ns at 100 MHz (fails).
 - 10:58, P8, Claude Code: HLS tile engine bit-exact in csim (5 sets, 200 frames, 720,000 scores, 0 mismatches); csynth II=1, 1.007 M cycles/frame, 20 BRAM / 4 DSP / 4.6k FF / 8.0k LUT; IP exported. Waiting for user review.
+- 11 Oct, docs reconciliation, Claude Code: detector/__init__.py docstring, device/README `.env.example` (used by cloud setup scripts today), rtl_sim/VALIDATION.md now points to the synthesis/OOC reports, CLAUDE.md ARM-pipeline rule marked planned; P12 notes list what already exists and what is missing. R1 row left to its owner.

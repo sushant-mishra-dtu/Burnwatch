@@ -29,6 +29,6 @@ zedboard/   tile engine as hand-written Verilog + VIO for a ZedBoard (Vivado 202
 - Device code runs on PYNQ's Python (armv7l, inside the PYNQ venv): numpy and cv2 are available, but scipy/torch/sklearn are not. Add only pure-Python deps (paho-mqtt, boto3).
 - Secrets (`*.pem`, `*.key`, `.env`, `device/certs/`) are never committed.
 - Honest claims only. Do not claim "ML", "AI on the edge", "low power" or "regulatory-grade". Every number in the README comes from a script in this repo.
-- The ARM-only pipeline must keep working end to end. The PL is an accelerator swapped in behind the same interface (`TileEngine.step(rgb, update_this_frame) -> (scores[45,80], gate, changed)`, see `docs/contracts.md` section 6).
+- The ARM-only pipeline (planned, P3/P6) is the reference path and must work end to end on its own once built. The PL is an accelerator swapped in behind the same interface (`TileEngine.step(rgb, update_this_frame) -> (scores[45,80], gate, changed)`, see `docs/contracts.md` section 6).
 - AWS region `ap-south-1` for everything, Bedrock included (Mantle endpoint, `anthropic.claude-haiku-5-5`). The fallback verifier calls NVIDIA's hosted API; its key is the NoEcho SAM parameter `NvidiaApiKey` (Lambda env `NVIDIA_API_KEY`) and lives only in the git-ignored `cloud/.env`.
 - Keep it small. Before adding a dependency, a service or an abstraction, ask whether the 3-minute video needs it.

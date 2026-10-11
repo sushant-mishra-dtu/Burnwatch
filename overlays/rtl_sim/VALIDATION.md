@@ -14,6 +14,6 @@ Golden-vector digests printed by the unchanged dump_golden.py:
 - synthetic: sha256 prefix df5d3395673a5e38
 - synthetic-u3: sha256 prefix 5b2e921b497e9705
 
-Reference/contract regression: 24 tests passed (`tests/test_golden.py`, `tests/test_contracts.py`). The report comes from the final single-pass RTL sources in this folder. The top-level algorithm and binary formats were not changed. No FPGA synthesis/resource-fit result, timing closure, AXI overlay integration, HDMI capture, physical board FPS or power measurement is claimed.
+Reference/contract regression: 24 tests passed (`tests/test_golden.py`, `tests/test_contracts.py`). The report comes from the final single-pass RTL sources in this folder. The top-level algorithm and binary formats were not changed. This report covers simulation only. Synthesis and core-only OOC place-and-route results are in [SYNTHESIS_VALIDATION.md](SYNTHESIS_VALIDATION.md) and [OOC_VALIDATION.md](OOC_VALIDATION.md); both miss the 100 MHz timing target. No timing closure, AXI overlay integration, HDMI capture, physical board FPS or power measurement is claimed.
 
 Reproduce using README.md and the installed run_local_sim.ps1.
