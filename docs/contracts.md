@@ -1,6 +1,6 @@
 # BurnWatch contracts
 
-The single source of truth for every format shared between folders and machines. Two agents build against this file in parallel, so **a change here is announced (commit message `contracts: …` plus a line under "Plan changes" in PROGRESS.md), never slipped in.** [`tools/contracts.py`](../tools/contracts.py) is the executable copy of the geometry, topic, key and packet-packing helpers. The planned device/cloud consumers are not all present in this checkout.
+The single source of truth for every format shared between folders and machines. Two agents build against this file in parallel, so **a change here is announced (commit message `contracts: …` plus a line under "Plan changes" in PROGRESS.md), never slipped in.** [`tools/contracts.py`](../tools/contracts.py) is the executable copy of sections 1, 3, 5 and 7 (packing): import it, don't retype constants.
 
 Taken from CLAUDE.md and PROMPTS.md (P2–P8). Items marked **⚑F*n*** were conflicts between those sources. The user decided them on 10 Oct 2026 at 13:05 (all recommended defaults accepted), and the body below follows those decisions. Items marked **◇** are gaps the prompts left open, which this file fills.
 
@@ -43,7 +43,7 @@ Endpoint: the account's `iot:Data-ATS` endpoint (`<prefix>-ats.iot.ap-south-1.am
 - **client_id:** the device is `burnwatch-<camera>` (= `CLIENT_ID` in `device/.env`). A tool that connects at the same time (for example `cloud_selftest.py` while the board runs) uses `burnwatch-<camera>-<suffix>`. IoT Core disconnects the older session when a client id is reused. The policy grants `iot:Connect` on `client/burnwatch-*`, which covers both.
 - **Policy `burnwatch-device`:** Connect `client/burnwatch-*`; Publish and Receive `topic/burnwatch/*`; Subscribe `topicfilter/burnwatch/*`.
 - **On every (re)connect** the device subscribes to `burnwatch/<camera>/verdict`.
-- **Payloads** are compact UTF-8 JSON. The current helper schemas describe the exact fields used by the checked-in tests; future runtime receivers may add extension fields only after the validator policy is updated together with this contract.
+- **Payloads** are compact UTF-8 JSON. Senders send exactly the fields listed. Receivers ignore unknown fields.
 - **Video setup:** the IoT MQTT test client subscribes to `burnwatch/#`.
 
 ## 2. JSON messages
