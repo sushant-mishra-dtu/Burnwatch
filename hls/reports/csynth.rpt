@@ -1,0 +1,305 @@
+
+
+================================================================
+== Synthesis Summary Report of 'tile_engine'
+================================================================
++ General Information: 
+    * Date:           Sun Oct 11 11:02:03 2026
+    * Version:        2022.1 (Build 3526262 on Mon Apr 18 15:48:16 MDT 2022)
+    * Project:        tile_engine_prj
+    * Solution:       sol1 (Vivado IP Flow Target)
+    * Product family: zynq
+    * Target device:  xc7z020-clg400-1
+    
+
++ Performance & Resource Estimates: 
+    
+    PS: '+' for module; 'o' for loop; '*' for dataflow
+    +-------------------------------------+------+------+---------+-----------+----------+---------+------+----------+---------+---------+-----------+------------+-----+
+    |               Modules               | Issue|      | Latency |  Latency  | Iteration|         | Trip |          |         |         |           |            |     |
+    |               & Loops               | Type | Slack| (cycles)|    (ns)   |  Latency | Interval| Count| Pipelined|  BRAM   |   DSP   |     FF    |     LUT    | URAM|
+    +-------------------------------------+------+------+---------+-----------+----------+---------+------+----------+---------+---------+-----------+------------+-----+
+    |+ tile_engine                        |     -|  0.00|  1007464|  1.007e+07|         -|  1007465|     -|        no|  20 (7%)|   4 (1%)|  4605 (4%)|  8043 (15%)|    -|
+    | + tile_engine_Pipeline_CLEAR        |     -|  2.56|       82|    820.000|         -|       82|     -|        no|        -|        -|    9 (~0%)|    51 (~0%)|    -|
+    |  o CLEAR                            |     -|  7.30|       80|    800.000|         1|        1|    80|       yes|        -|        -|          -|           -|    -|
+    | o ROWS                              |     -|  7.30|  1007280|  1.007e+07|      1399|        -|   720|        no|        -|        -|          -|           -|    -|
+    |  + tile_engine_Pipeline_COLS        |     -|  0.00|     1296|  1.296e+04|         -|     1296|     -|        no|  2 (~0%)|  2 (~0%)|  1083 (1%)|   1115 (2%)|    -|
+    |   o COLS                            |     -|  7.30|     1288|  1.288e+04|        10|        1|  1280|       yes|        -|        -|          -|           -|    -|
+    |  + finish_tile_row                  |     -|  0.00|       98|    980.000|         -|       98|     -|        no|  12 (4%)|  2 (~0%)|  1350 (1%)|   1942 (3%)|    -|
+    |   + finish_tile_row_Pipeline_TILES  |     -|  0.00|       90|    900.000|         -|       90|     -|        no|  12 (4%)|  2 (~0%)|  1284 (1%)|   1639 (3%)|    -|
+    |    o TILES                          |     -|  7.30|       88|    880.000|        10|        1|    80|       yes|        -|        -|          -|           -|    -|
+    +-------------------------------------+------+------+---------+-----------+----------+---------+------+----------+---------+---------+-----------+------------+-----+
+
+
+================================================================
+== HW Interfaces
+================================================================
+* M_AXI
++-------------+------------+---------------+---------+--------+----------+-----------+--------------+--------------+-------------+-------------+
+| Interface   | Data Width | Address Width | Latency | Offset | Register | Max Widen | Max Read     | Max Write    | Num Read    | Num Write   |
+|             | (SW->HW)   |               |         |        |          | Bitwidth  | Burst Length | Burst Length | Outstanding | Outstanding |
++-------------+------------+---------------+---------+--------+----------+-----------+--------------+--------------+-------------+-------------+
+| m_axi_gmem0 | 32 -> 32   | 32            | 0       | slave  | 0        | 0         | 256          | 16           | 16          | 16          |
+| m_axi_gmem1 | 8 -> 8     | 32            | 0       | slave  | 0        | 0         | 16           | 16           | 16          | 16          |
++-------------+------------+---------------+---------+--------+----------+-----------+--------------+--------------+-------------+-------------+
+
+* S_AXILITE Interfaces
++---------------+------------+---------------+--------+----------+
+| Interface     | Data Width | Address Width | Offset | Register |
++---------------+------------+---------------+--------+----------+
+| s_axi_control | 32         | 8             | 16     | 0        |
++---------------+------------+---------------+--------+----------+
+
+* S_AXILITE Registers
++---------------+-------------------+--------+-------+--------+----------------------------------+----------------------------------------------------------------------+
+| Interface     | Register          | Offset | Width | Access | Description                      | Bit Fields                                                           |
++---------------+-------------------+--------+-------+--------+----------------------------------+----------------------------------------------------------------------+
+| s_axi_control | CTRL              | 0x00   | 32    | RW     | Control signals                  | 0=AP_START 1=AP_DONE 2=AP_IDLE 3=AP_READY 7=AUTO_RESTART 9=INTERRUPT |
+| s_axi_control | GIER              | 0x04   | 32    | RW     | Global Interrupt Enable Register | 0=Enable                                                             |
+| s_axi_control | IP_IER            | 0x08   | 32    | RW     | IP Interrupt Enable Register     | 0=CHAN0_INT_EN 1=CHAN1_INT_EN                                        |
+| s_axi_control | IP_ISR            | 0x0c   | 32    | RW     | IP Interrupt Status Register     | 0=CHAN0_INT_ST 1=CHAN1_INT_ST                                        |
+| s_axi_control | frame             | 0x10   | 32    | W      | Data signal of frame             |                                                                      |
+| s_axi_control | scores            | 0x18   | 32    | W      | Data signal of scores            |                                                                      |
+| s_axi_control | reset             | 0x20   | 32    | W      | Data signal of reset             |                                                                      |
+| s_axi_control | update_this_frame | 0x28   | 32    | W      | Data signal of update_this_frame |                                                                      |
+| s_axi_control | k_slow            | 0x30   | 32    | W      | Data signal of k_slow            |                                                                      |
+| s_axi_control | k_fast            | 0x38   | 32    | W      | Data signal of k_fast            |                                                                      |
+| s_axi_control | w_edge            | 0x40   | 32    | W      | Data signal of w_edge            |                                                                      |
+| s_axi_control | w_grey            | 0x48   | 32    | W      | Data signal of w_grey            |                                                                      |
+| s_axi_control | score_shift       | 0x50   | 32    | W      | Data signal of score_shift       |                                                                      |
+| s_axi_control | t_flag            | 0x58   | 32    | W      | Data signal of t_flag            |                                                                      |
+| s_axi_control | sat_max           | 0x60   | 32    | W      | Data signal of sat_max           |                                                                      |
+| s_axi_control | sat_tol           | 0x68   | 32    | W      | Data signal of sat_tol           |                                                                      |
+| s_axi_control | t_global          | 0x70   | 32    | W      | Data signal of t_global          |                                                                      |
+| s_axi_control | gate_tiles        | 0x78   | 32    | W      | Data signal of gate_tiles        |                                                                      |
+| s_axi_control | gate_out          | 0x80   | 32    | R      | Data signal of gate_out          |                                                                      |
+| s_axi_control | gate_out_ctrl     | 0x84   | 32    | R      | Control signal of gate_out       | 0=gate_out_ap_vld                                                    |
+| s_axi_control | changed_out       | 0x90   | 32    | R      | Data signal of changed_out       |                                                                      |
+| s_axi_control | changed_out_ctrl  | 0x94   | 32    | R      | Control signal of changed_out    | 0=changed_out_ap_vld                                                 |
+| s_axi_control | frame_count       | 0xa0   | 32    | R      | Data signal of frame_count       |                                                                      |
+| s_axi_control | frame_count_ctrl  | 0xa4   | 32    | R      | Control signal of frame_count    | 0=frame_count_ap_vld                                                 |
++---------------+-------------------+--------+-------+--------+----------------------------------+----------------------------------------------------------------------+
+
+* TOP LEVEL CONTROL
++-----------+------------+-----------+
+| Interface | Type       | Ports     |
++-----------+------------+-----------+
+| ap_clk    | clock      | ap_clk    |
+| ap_rst_n  | reset      | ap_rst_n  |
+| interrupt | interrupt  | interrupt |
+| ap_ctrl   | ap_ctrl_hs |           |
++-----------+------------+-----------+
+
+
+================================================================
+== SW I/O Information
+================================================================
+* Top Function Arguments
++-------------------+-----------+---------------------+
+| Argument          | Direction | Datatype            |
++-------------------+-----------+---------------------+
+| frame             | in        | ap_uint<32> const * |
+| scores            | out       | ap_uint<8>*         |
+| reset             | in        | ap_uint<1>          |
+| update_this_frame | in        | ap_uint<1>          |
+| k_slow            | in        | ap_uint<4>          |
+| k_fast            | in        | ap_uint<4>          |
+| w_edge            | in        | ap_uint<8>          |
+| w_grey            | in        | ap_uint<8>          |
+| score_shift       | in        | ap_uint<5>          |
+| t_flag            | in        | ap_uint<8>          |
+| sat_max           | in        | ap_uint<8>          |
+| sat_tol           | in        | ap_uint<16>         |
+| t_global          | in        | ap_uint<16>         |
+| gate_tiles        | in        | ap_uint<12>         |
+| gate_out          | out       | ap_uint<1>*         |
+| changed_out       | out       | ap_uint<12>*        |
+| frame_count       | out       | ap_uint<32>*        |
++-------------------+-----------+---------------------+
+
+* SW-to-HW Mapping
++-------------------+---------------+-----------+----------+---------------------------------------------+
+| Argument          | HW Interface  | HW Type   | HW Usage | HW Info                                     |
++-------------------+---------------+-----------+----------+---------------------------------------------+
+| frame             | m_axi_gmem0   | interface |          |                                             |
+| frame             | s_axi_control | register  | offset   | name=frame offset=0x10 range=32             |
+| scores            | m_axi_gmem1   | interface |          |                                             |
+| scores            | s_axi_control | register  | offset   | name=scores offset=0x18 range=32            |
+| reset             | s_axi_control | register  |          | name=reset offset=0x20 range=32             |
+| update_this_frame | s_axi_control | register  |          | name=update_this_frame offset=0x28 range=32 |
+| k_slow            | s_axi_control | register  |          | name=k_slow offset=0x30 range=32            |
+| k_fast            | s_axi_control | register  |          | name=k_fast offset=0x38 range=32            |
+| w_edge            | s_axi_control | register  |          | name=w_edge offset=0x40 range=32            |
+| w_grey            | s_axi_control | register  |          | name=w_grey offset=0x48 range=32            |
+| score_shift       | s_axi_control | register  |          | name=score_shift offset=0x50 range=32       |
+| t_flag            | s_axi_control | register  |          | name=t_flag offset=0x58 range=32            |
+| sat_max           | s_axi_control | register  |          | name=sat_max offset=0x60 range=32           |
+| sat_tol           | s_axi_control | register  |          | name=sat_tol offset=0x68 range=32           |
+| t_global          | s_axi_control | register  |          | name=t_global offset=0x70 range=32          |
+| gate_tiles        | s_axi_control | register  |          | name=gate_tiles offset=0x78 range=32        |
+| gate_out          | s_axi_control | register  |          | name=gate_out offset=0x80 range=32          |
+| gate_out          | s_axi_control | register  |          | name=gate_out_ctrl offset=0x84 range=32     |
+| changed_out       | s_axi_control | register  |          | name=changed_out offset=0x90 range=32       |
+| changed_out       | s_axi_control | register  |          | name=changed_out_ctrl offset=0x94 range=32  |
+| frame_count       | s_axi_control | register  |          | name=frame_count offset=0xa0 range=32       |
+| frame_count       | s_axi_control | register  |          | name=frame_count_ctrl offset=0xa4 range=32  |
++-------------------+---------------+-----------+----------+---------------------------------------------+
+
+
+================================================================
+== M_AXI Burst Information
+================================================================
+ Note: All burst requests might be further partitioned into multiple requests during RTL generation based on max_read_burst_length or max_write_burst_length settings.
+
+* Inferred Burst Summary
++--------------+-------+-----------+--------+-------+--------------------------+
+| HW Interface | Loop  | Direction | Length | Width | Location                 |
++--------------+-------+-----------+--------+-------+--------------------------+
+| m_axi_gmem1  | TILES | write     | 80     | 8     | src/tile_engine.cpp:40:5 |
++--------------+-------+-----------+--------+-------+--------------------------+
+
+* Inferred Bursts and Widening Missed
++-------------------+----------+-------+-------------------------------------------------------------------------------------------------------+------------+---------------------------+
+| HW Interface      | Variable | Loop  | Problem                                                                                               | Resolution | Location                  |
++-------------------+----------+-------+-------------------------------------------------------------------------------------------------------+------------+---------------------------+
+| m_axi_gmem0       | frame    | COLS  | Could not widen since type i32 size is greater than or equal to the max_widen_bitwidth threshold of 0 | 214-353    | src/tile_engine.cpp:122:9 |
+| m_axi_gmem1,gmem1 | scores   | TILES | Could not widen since type i8 size is greater than or equal to the max_widen_bitwidth threshold of 0  | 214-353    | src/tile_engine.cpp:40:5  |
+| m_axi_gmem0       |          |       | Could not burst due to multiple potential reads to the same bundle in the same region.                | 214-224    | src/tile_engine.cpp:117:5 |
++-------------------+----------+-------+-------------------------------------------------------------------------------------------------------+------------+---------------------------+
+
+    * Resolution URL: www.xilinx.com/cgi-bin/docs/rdoc?v=2022.1;t=hls+guidance;d=XXX-YYY.html (replace XXX-YYY with column value)
+
+================================================================
+== Bind Op Report
+================================================================
++-----------------------------------------+-----+--------+-------------+-----+--------+---------+
+| Name                                    | DSP | Pragma | Variable    | Op  | Impl   | Latency |
++-----------------------------------------+-----+--------+-------------+-----+--------+---------+
+| + tile_engine                           | 4   |        |             |     |        |         |
+|   add_ln117_fu_473_p2                   | -   |        | add_ln117   | add | fabric | 0       |
+|   empty_45_fu_541_p2                    | -   |        | empty_45    | add | fabric | 0       |
+|   add_ln129_fu_555_p2                   | -   |        | add_ln129   | add | fabric | 0       |
+|   add_ln129_1_fu_565_p2                 | -   |        | add_ln129_1 | add | fabric | 0       |
+|   add_ln175_fu_598_p2                   | -   |        | add_ln175   | add | fabric | 0       |
+|   add_ln232_fu_628_p2                   | -   |        | add_ln232   | add | fabric | 0       |
+|  + tile_engine_Pipeline_CLEAR           | 0   |        |             |     |        |         |
+|    add_ln111_fu_138_p2                  | -   |        | add_ln111   | add | fabric | 0       |
+|  + tile_engine_Pipeline_COLS            | 2   |        |             |     |        |         |
+|    add_ln122_fu_394_p2                  | -   |        | add_ln122   | add | fabric | 0       |
+|    mac_muladd_8ns_7ns_16ns_16_4_1_U12   | 1   |        | ret_V_6     | mul | dsp48  | 3       |
+|    mul_8ns_9ns_16_1_1_U8                | -   |        | ret_V_7     | mul | auto   | 0       |
+|    mac_muladd_8ns_5ns_16ns_16_4_1_U11   | 1   |        | ret_V_9     | mul | dsp48  | 3       |
+|    mac_muladd_8ns_5ns_16ns_16_4_1_U11   | 1   |        | ret_V_8     | add | dsp48  | 3       |
+|    mac_muladd_8ns_7ns_16ns_16_4_1_U12   | 1   |        | ret_V       | add | dsp48  | 3       |
+|    sumY_V_1_fu_686_p2                   | -   |        | sumY_V_1    | add | fabric | 0       |
+|    sub_ln232_fu_596_p2                  | -   |        | sub_ln232   | sub | fabric | 0       |
+|    sumS_V_1_fu_620_p2                   | -   |        | sumS_V_1    | add | fabric | 0       |
+|    add_ln886_fu_710_p2                  | -   |        | add_ln886   | add | fabric | 0       |
+|    add_ln886_1_fu_635_p2                | -   |        | add_ln886_1 | add | fabric | 0       |
+|    add_ln75_1_fu_769_p2                 | -   |        | add_ln75_1  | add | fabric | 0       |
+|    add_ln75_fu_779_p2                   | -   |        | add_ln75    | add | fabric | 0       |
+|    add_ln75_2_fu_785_p2                 | -   |        | add_ln75_2  | add | fabric | 0       |
+|    add_ln1541_fu_815_p2                 | -   |        | add_ln1541  | add | fabric | 0       |
+|    ax_V_fu_908_p2                       | -   |        | ax_V        | sub | fabric | 0       |
+|    ay_V_fu_930_p2                       | -   |        | ay_V        | sub | fabric | 0       |
+|    ret_V_5_fu_944_p2                    | -   |        | ret_V_5     | add | fabric | 0       |
+|    sumE_V_1_fu_971_p2                   | -   |        | sumE_V_1    | add | fabric | 0       |
+|    add_ln169_fu_514_p2                  | -   |        | add_ln169   | add | fabric | 0       |
+|    add_ln886_3_fu_1002_p2               | -   |        | add_ln886_3 | add | fabric | 0       |
+|  + finish_tile_row                      | 2   |        |             |     |        |         |
+|    mul_fu_279_p2                        | -   |        | mul         | add | fabric | 0       |
+|    add_ln40_fu_289_p2                   | -   |        | add_ln40    | add | fabric | 0       |
+|   + finish_tile_row_Pipeline_TILES      | 2   |        |             |     |        |         |
+|     add_ln40_1_fu_453_p2                | -   |        | add_ln40_1  | add | fabric | 0       |
+|     add_ln68_fu_473_p2                  | -   |        | add_ln68    | add | fabric | 0       |
+|     ret_V_25_fu_589_p2                  | -   |        | ret_V_25    | sub | fabric | 0       |
+|     ret_V_11_fu_609_p2                  | -   |        | ret_V_11    | sub | fabric | 0       |
+|     ret_V_13_fu_624_p2                  | -   |        | ret_V_13    | sub | fabric | 0       |
+|     grey_V_fu_674_p2                    | -   |        | grey_V      | sub | fabric | 0       |
+|     mul_mul_17ns_8ns_25_4_1_U35         | 1   |        | ret_V_26    | mul | dsp48  | 3       |
+|     mac_muladd_17ns_8ns_25ns_26_4_1_U36 | 1   |        | ret_V_27    | mul | dsp48  | 3       |
+|     mac_muladd_17ns_8ns_25ns_26_4_1_U36 | 1   |        | ret_V_17    | add | dsp48  | 3       |
+|     ret_V_14_fu_781_p2                  | -   |        | ret_V_14    | add | fabric | 0       |
+|     ret_V_18_fu_706_p2                  | -   |        | ret_V_18    | sub | fabric | 0       |
+|     ret_V_19_fu_711_p2                  | -   |        | ret_V_19    | sub | fabric | 0       |
+|     add_ln886_fu_729_p2                 | -   |        | add_ln886   | add | fabric | 0       |
+|     ret_V_20_fu_860_p2                  | -   |        | ret_V_20    | sub | fabric | 0       |
+|     ret_V_21_fu_868_p2                  | -   |        | ret_V_21    | add | fabric | 0       |
+|     add_ln232_fu_931_p2                 | -   |        | add_ln232   | add | fabric | 0       |
+|     ret_V_22_fu_876_p2                  | -   |        | ret_V_22    | add | fabric | 0       |
+|     add_ln232_1_fu_894_p2               | -   |        | add_ln232_1 | add | fabric | 0       |
+|     ret_V_23_fu_899_p2                  | -   |        | ret_V_23    | sub | fabric | 0       |
+|     ret_V_24_fu_908_p2                  | -   |        | ret_V_24    | add | fabric | 0       |
+|     add_ln232_2_fu_949_p2               | -   |        | add_ln232_2 | add | fabric | 0       |
++-----------------------------------------+-----+--------+-------------+-----+--------+---------+
+
+
+================================================================
+== Bind Storage Report
+================================================================
++------------------------------------+------+------+--------+----------+---------+------+---------+
+| Name                               | BRAM | URAM | Pragma | Variable | Storage | Impl | Latency |
++------------------------------------+------+------+--------+----------+---------+------+---------+
+| + tile_engine                      | 20   | 0    |        |          |         |      |         |
+|   accE_V_U                         | 1    | -    |        | accE_V   | ram_s2p | auto | 1       |
+|   accE_V_1_U                       | 1    | -    |        | accE_V_1 | ram_s2p | auto | 1       |
+|   accY_V_U                         | 1    | -    |        | accY_V   | ram_s2p | auto | 1       |
+|   accY_V_1_U                       | 1    | -    |        | accY_V_1 | ram_s2p | auto | 1       |
+|   accS_V_U                         | 1    | -    |        | accS_V   | ram_s2p | auto | 1       |
+|   accS_V_1_U                       | 1    | -    |        | accS_V_1 | ram_s2p | auto | 1       |
+|  + tile_engine_Pipeline_COLS       | 2    | 0    |        |          |         |      |         |
+|    lb1_V_U                         | 1    | -    |        | lb1_V    | ram_s2p | auto | 1       |
+|    lb2_V_U                         | 1    | -    |        | lb2_V    | ram_1p  | auto | 1       |
+|  + finish_tile_row                 | 12   | 0    |        |          |         |      |         |
+|   + finish_tile_row_Pipeline_TILES | 12   | 0    |        |          |         |      |         |
+|     bS_V_U                         | 4    | -    |        | bS_V     | ram_s2p | auto | 1       |
+|     bE_V_U                         | 4    | -    |        | bE_V     | ram_s2p | auto | 1       |
+|     bY_V_U                         | 4    | -    |        | bY_V     | ram_s2p | auto | 1       |
++------------------------------------+------+------+--------+----------+---------+------+---------+
+
+
+================================================================
+== Pragma Report
+================================================================
+* Valid Pragma Syntax
++-----------------+---------------------------------------------------------------------------------------------+-------------------------------------------+
+| Type            | Options                                                                                     | Location                                  |
++-----------------+---------------------------------------------------------------------------------------------+-------------------------------------------+
+| pipeline        | II = 1                                                                                      | src/tile_engine.cpp:41 in finish_tile_row |
+| dependence      | variable = bE inter false                                                                   | src/tile_engine.cpp:42 in finish_tile_row |
+| dependence      | variable = bY inter false                                                                   | src/tile_engine.cpp:43 in finish_tile_row |
+| dependence      | variable = bS inter false                                                                   | src/tile_engine.cpp:44 in finish_tile_row |
+| interface       | m_axi port = frame bundle = gmem0 offset = slave depth = 921600 max_read_burst_length = 256 | src/tile_engine.cpp:77 in tile_engine     |
+| interface       | m_axi port = scores bundle = gmem1 offset = slave depth = 3600                              | src/tile_engine.cpp:78 in tile_engine     |
+| interface       | s_axilite port = frame bundle = control                                                     | src/tile_engine.cpp:79 in tile_engine     |
+| interface       | s_axilite port = scores bundle = control                                                    | src/tile_engine.cpp:80 in tile_engine     |
+| interface       | s_axilite port = reset bundle = control                                                     | src/tile_engine.cpp:81 in tile_engine     |
+| interface       | s_axilite port = update_this_frame bundle = control                                         | src/tile_engine.cpp:82 in tile_engine     |
+| interface       | s_axilite port = k_slow bundle = control                                                    | src/tile_engine.cpp:83 in tile_engine     |
+| interface       | s_axilite port = k_fast bundle = control                                                    | src/tile_engine.cpp:84 in tile_engine     |
+| interface       | s_axilite port = w_edge bundle = control                                                    | src/tile_engine.cpp:85 in tile_engine     |
+| interface       | s_axilite port = w_grey bundle = control                                                    | src/tile_engine.cpp:86 in tile_engine     |
+| interface       | s_axilite port = score_shift bundle = control                                               | src/tile_engine.cpp:87 in tile_engine     |
+| interface       | s_axilite port = t_flag bundle = control                                                    | src/tile_engine.cpp:88 in tile_engine     |
+| interface       | s_axilite port = sat_max bundle = control                                                   | src/tile_engine.cpp:89 in tile_engine     |
+| interface       | s_axilite port = sat_tol bundle = control                                                   | src/tile_engine.cpp:90 in tile_engine     |
+| interface       | s_axilite port = t_global bundle = control                                                  | src/tile_engine.cpp:91 in tile_engine     |
+| interface       | s_axilite port = gate_tiles bundle = control                                                | src/tile_engine.cpp:92 in tile_engine     |
+| interface       | s_axilite port = gate_out bundle = control                                                  | src/tile_engine.cpp:93 in tile_engine     |
+| interface       | s_axilite port = changed_out bundle = control                                               | src/tile_engine.cpp:94 in tile_engine     |
+| interface       | s_axilite port = frame_count bundle = control                                               | src/tile_engine.cpp:95 in tile_engine     |
+| interface       | s_axilite port = return bundle = control                                                    | src/tile_engine.cpp:96 in tile_engine     |
+| array_partition | variable = accE complete dim = 1                                                            | src/tile_engine.cpp:106 in tile_engine    |
+| array_partition | variable = accY complete dim = 1                                                            | src/tile_engine.cpp:107 in tile_engine    |
+| array_partition | variable = accS complete dim = 1                                                            | src/tile_engine.cpp:108 in tile_engine    |
+| pipeline        | II = 1                                                                                      | src/tile_engine.cpp:112 in tile_engine    |
+| array_partition | variable = w complete dim = 0                                                               | src/tile_engine.cpp:119 in tile_engine    |
+| pipeline        | II = 1                                                                                      | src/tile_engine.cpp:123 in tile_engine    |
+| dependence      | variable = lb1 inter false                                                                  | src/tile_engine.cpp:124 in tile_engine    |
+| dependence      | variable = lb2 inter false                                                                  | src/tile_engine.cpp:125 in tile_engine    |
+| dependence      | variable = accE inter false                                                                 | src/tile_engine.cpp:126 in tile_engine    |
+| dependence      | variable = accY inter false                                                                 | src/tile_engine.cpp:127 in tile_engine    |
+| dependence      | variable = accS inter false                                                                 | src/tile_engine.cpp:128 in tile_engine    |
++-----------------+---------------------------------------------------------------------------------------------+-------------------------------------------+
+
+

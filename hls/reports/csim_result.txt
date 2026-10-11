@@ -1,0 +1,9 @@
+# Vitis HLS 2022.1 csim_design -O, 11 Oct 2026 10:57 IST (hls/run_hls.tcl). Elapsed 604 s.
+# Vector digests (tools/dump_golden.py): synthetic df5d3395673a5e38, synthetic-u3 5b2e921b497e9705, synthetic-regs 949d9dbe181347e8,
+#   clip-20261011_102856 a47f24e5dc8464cb, clip-20261011_102913 d7d669adfc9a6714 (clips: testdata/clips, git-ignored, --step 3).
+PASS testdata/golden/synthetic: 40 frames, 144000 tile scores, 0 frames with a mismatch, 0 score mismatches
+PASS testdata/golden/synthetic-u3: 40 frames, 144000 tile scores, 0 frames with a mismatch, 0 score mismatches
+PASS testdata/golden/synthetic-regs: 40 frames, 144000 tile scores, 0 frames with a mismatch, 0 score mismatches
+PASS testdata/golden/clip-20261011_102856: 40 frames, 144000 tile scores, 0 frames with a mismatch, 0 score mismatches
+PASS testdata/golden/clip-20261011_102913: 40 frames, 144000 tile scores, 0 frames with a mismatch, 0 score mismatches
+TB PASS: 5 vector set(s), 0 failing frame(s)

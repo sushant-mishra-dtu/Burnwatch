@@ -4,12 +4,14 @@
     python tools/dump_golden.py --clip testdata/clips/dhoop_01.mp4 [--start-s 2] [--step 2]
     python tools/dump_golden.py --pngs some/folder [--name myset]
     python tools/dump_golden.py --synthetic --update-every 3 --reset-at 0,30 --name synthetic-u3   # optional extra set
+    python tools/dump_golden.py --synthetic --param K_FAST=3 --param SCORE_SHIFT=5 --name synthetic-regs  # non-default registers
 
 Every set: frame 0 is a reset frame, frame 20 is the source frame + 40 brightness (must come out gated), and by
 default update_this_frame = 1 on every frame. Frames are resized to 1280x720. The printed digest covers every
 frame and expected output, so two machines can confirm they generated the same synthetic set.
 """
 import argparse
+import dataclasses
 import glob
 import hashlib
 import os
@@ -156,6 +158,8 @@ def main():
     ap.add_argument("--step", type=int, default=1, help="clip: keep every Nth frame")
     ap.add_argument("--update-every", type=int, default=1, help="update_this_frame on frames where i %% N == 0")
     ap.add_argument("--reset-at", default="0", help="comma-separated reset frames (must include 0)")
+    ap.add_argument("--param", action="append", default=[], metavar="NAME=VALUE",
+                    help="override a register default (repeatable), e.g. --param K_FAST=3")
     ap.add_argument("--out", default=os.path.join(ROOT, "testdata", "golden"), help="output root")
     a = ap.parse_args()
 
@@ -164,6 +168,16 @@ def main():
     reset_at = tuple(int(x) for x in a.reset_at.split(","))
     if 0 not in reset_at:
         ap.error("--reset-at must include frame 0")
+    overrides = {}
+    for kv in a.param:
+        k, _, v = kv.partition("=")
+        if k not in REGISTER_FIELDS or not v.lstrip("-").isdigit():
+            ap.error(f"--param {kv!r}: expected NAME=INT with NAME one of {', '.join(REGISTER_FIELDS)}")
+        overrides[k] = int(v)
+    try:
+        params = dataclasses.replace(Params(), **overrides)
+    except ValueError as e:
+        ap.error(str(e))
     if a.synthetic:
         name, frames = a.name or "synthetic", synthetic_frames(a.frames)
     elif a.clip:
@@ -171,7 +185,7 @@ def main():
         frames = clip_frames(a.clip, a.frames, a.start_s, a.step)
     else:
         name, frames = a.name or os.path.basename(os.path.normpath(a.pngs)), png_frames(a.pngs, a.frames)
-    dump(frames, os.path.join(a.out, name), Params(), a.update_every, reset_at)
+    dump(frames, os.path.join(a.out, name), params, a.update_every, reset_at)
 
 
 if __name__ == "__main__":

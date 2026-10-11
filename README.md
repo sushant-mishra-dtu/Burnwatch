@@ -29,6 +29,7 @@ camera sees a suspected burn
 | Laptop camera/clip feed | Implemented in `tools/camfeed.py` |
 | PYNQ HDMI input check | Implemented in `device/hdmi_check.py` |
 | Standalone SystemVerilog scoring core | Implemented in `overlays/rtl_sim/` |
+| Vitis HLS tile engine (AXI interface) | Implemented in `hls/`; C simulation bit-exact on 5 vector sets (200 frames, 720,000 scores); synthesis estimate II = 1, 1,007,464 cycles/frame; no co-simulation or board run yet |
 | RTL simulation | Checked-in pass: 80 frames, 288,000 tile scores, zero mismatches |
 | Native synthesis | Completed, but timing and package-I/O limits are not met |
 | OOC placement/routing | Completed for the isolated core, but 100 MHz timing fails |
@@ -79,7 +80,7 @@ The source-level geometry is:
 3,600 scores/frame
 ```
 
-The RTL datapath in `overlays/rtl_sim/tile_engine.sv` uses rotating luma line buffers, tile accumulators, persistent baselines and a score stream. Its ports are a **private simulation harness**, not the AXI-Lite/m_axi interface described in the future HLS contract.
+The RTL datapath in `overlays/rtl_sim/tile_engine.sv` uses rotating luma line buffers, tile accumulators, persistent baselines and a score stream. Its ports are a **private simulation harness**, not the AXI-Lite/m_axi interface. The Vitis HLS core in [`hls/`](hls/) has that interface ([`docs/contracts.md`](docs/contracts.md) section 7).
 
 ### ZedBoard/VIO hardware package
 
@@ -106,8 +107,8 @@ Attached FPGA evidence is included here:
 
 | Function | Current implementation | Evidence |
 |---|---|---|
-| Pixel feature extraction | SystemVerilog RTL and ZedBoard Verilog package | RTL simulation vectors |
-| Tile scoring/baselines | SystemVerilog RTL and ZedBoard Verilog package | RTL simulation vectors |
+| Pixel feature extraction | SystemVerilog RTL, ZedBoard Verilog package, Vitis HLS core | RTL simulation and HLS C-simulation vectors |
+| Tile scoring/baselines | SystemVerilog RTL, ZedBoard Verilog package, Vitis HLS core | RTL simulation and HLS C-simulation vectors |
 | Python reference | NumPy integer implementation | `tests/test_golden.py` |
 | ARM region grouping | Planned | No `detector/regions.py` in this checkout |
 | ARM state machine | Planned | No `detector/state.py` in this checkout |
@@ -123,6 +124,7 @@ Mermaid source: [`docs/validation.mmd`](docs/validation.mmd).
 The checked-in evidence is:
 
 - RTL simulation: **PASS**, 80 full-resolution frames, 288,000 scores, zero mismatches;
+- HLS C simulation: **PASS**, 5 vector sets (3 synthetic, 2 recorded phone clips), 200 frames, 720,000 scores, zero mismatches; HLS synthesis estimate: II = 1, 1,007,464 cycles per frame (10.07 ms at 100 MHz), 20 BRAM_18K / 4 DSP / 4,605 FF / 8,043 LUT, not yet implemented or timed in Vivado ([`hls/README.md`](hls/README.md));
 - native synthesis: completed, but reports `-17.202 ns` worst setup slack and `206` required bonded I/O versus `125` available;
 - OOC route: all internal routable nets completed, but reports `-20.092 ns` setup WNS and 52,834 failing endpoints;
 - no final board bitstream, AXI/PS wrapper, physical board FPS or power measurement is claimed.
@@ -166,6 +168,8 @@ python tools/dump_golden.py --synthetic --update-every 3 --reset-at 0,30 --name 
 python tools/gen_header.py
 python tools/gen_header.py --check
 ```
+
+Then run the HLS flow (C simulation, synthesis, IP export): see [`hls/README.md`](hls/README.md).
 
 Generated vectors are intentionally ignored by Git; see [`docs/contracts.md`](docs/contracts.md).
 

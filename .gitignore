@@ -35,6 +35,8 @@ samconfig.toml.bak
 *.str
 .Xil/
 hls/proj*/
+hls/build/
+hls/reports/csim_last.txt
 vivado/proj*/
 *.runs/
 *.cache/

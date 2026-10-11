@@ -1,6 +1,6 @@
 # BurnWatch: context for every Claude Code session
 
-**What it is:** an FPGA-oriented open-burning smoke detector. The current checkout implements the integer reference model, camera/HDMI utilities, standalone RTL scoring core, ZedBoard/VIO package and AWS provisioning scaffolding. The ARM region/state runtime, device uploader, cloud verifier and final PYNQ overlay remain planned. The intended product flow is phone camera → laptop/DVR stand-in → HDMI → edge scoring → one suspect JPEG → cloud verification and human alert.
+**What it is:** an FPGA-oriented open-burning smoke detector. The current checkout implements the integer reference model, camera/HDMI utilities, standalone RTL scoring core, Vitis HLS tile engine (bit-exact in C simulation), ZedBoard/VIO package and AWS provisioning scaffolding. The ARM region/state runtime, device uploader, cloud verifier and final PYNQ overlay remain planned. The intended product flow is phone camera → laptop/DVR stand-in → HDMI → edge scoring → one suspect JPEG → cloud verification and human alert.
 
 **Event:** Environmental Hacks 2026, build window 8–11 Oct 2026. Judges watch a video of 3 minutes or less and read the public repo. One working feature beats five half-done ones.
 
@@ -13,7 +13,7 @@ Follow the **"continue" protocol at the top of [PROGRESS.md](PROGRESS.md)**: pic
 ```
 detector/   golden.py (integer reference = THE SPEC), config.py (all constants)
 device/     HDMI validation and PYNQ launcher; full runtime is planned
-hls/        generated config.h; Vitis HLS implementation is planned
+hls/        Vitis HLS tile engine, C testbench, run_hls.tcl, generated config.h
 cloud/      SAM template, Lambda stub, IoT/IAM setup scripts, cameras.json
 tools/      camfeed.py, contracts.py, dump_golden.py, gen_header.py
 testdata/   generated vectors/clips are git-ignored; labels/samples are planned
