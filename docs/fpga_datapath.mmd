@@ -1,0 +1,18 @@
+flowchart LR
+    IN["Packed RGB word<br/>R plus G shift 8 plus B shift 16"]
+    FEAT["Pixel features<br/>Y = (77R + 150G + 29B) >> 8<br/>S = max - min"]
+    SOBEL["3 x 3 Sobel<br/>edge strength E"]
+    TILE["16 x 16 tile means<br/>mE, mY, mS"]
+    BASE["Per-tile Q8 baselines<br/>bE, bY, bS"]
+    SCORE["Score and gate<br/>edge drop + grey shift<br/>saturation test"]
+    OUT["3,600 uint8 scores<br/>changed count + gate"]
+    UPDATE["Baseline update<br/>K_SLOW/K_FAST<br/>freeze flagged tiles"]
+
+    IN --> FEAT --> SOBEL --> TILE --> SCORE --> OUT
+    TILE --> BASE --> SCORE
+    SCORE --> UPDATE --> BASE
+
+    classDef stage fill:#eef7ff,stroke:#0969da,color:#111;
+    classDef state fill:#fff4ce,stroke:#9a6700,color:#111;
+    class IN,FEAT,SOBEL,TILE,SCORE,OUT stage;
+    class BASE,UPDATE state;
