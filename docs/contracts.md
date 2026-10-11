@@ -1,6 +1,6 @@
 # BurnWatch contracts
 
-The single source of truth for every format shared between folders and machines. Two agents build against this file in parallel, so **a change here is announced (commit message `contracts: …` plus a line under "Plan changes" in PROGRESS.md), never slipped in.** [`tools/contracts.py`](../tools/contracts.py) is the executable copy of sections 1, 3, 5 and 7 (packing): import it, don't retype constants.
+The single source of truth for every format shared between folders and machines. Two agents build against this file in parallel, so **a change here is announced (commit message `contracts: …` plus a line under "Plan changes" in PROGRESS.md), never slipped in.** [`tools/contracts.py`](../tools/contracts.py) is the executable copy of sections 1, 2 (field names and types), 3, 5 and 7 (packing): import it, don't retype constants.
 
 Taken from CLAUDE.md and PROMPTS.md (P2–P8). Items marked **⚑F*n*** were conflicts between those sources. The user decided them on 10 Oct 2026 at 13:05 (all recommended defaults accepted), and the body below follows those decisions. Items marked **◇** are gaps the prompts left open, which this file fills.
 

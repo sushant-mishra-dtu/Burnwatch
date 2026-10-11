@@ -79,7 +79,8 @@ def to_json(msg):
     return json.dumps(msg, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
 
 
-# Field name -> allowed Python types, for tests and for checking incoming messages.
+# Field name -> allowed Python types. check_fields enforces the sender rule (exactly these fields);
+# receivers ignore unknown fields (docs/contracts.md section 1).
 EVENT_FIELDS = {"camera": str, "state": str, "score": float, "tiles": int,
                 "bbox": list, "s3_key": str, "ts": int}
 VERDICT_FIELDS = {"camera": str, "ts": int, "is_smoke": bool, "confidence": float,
