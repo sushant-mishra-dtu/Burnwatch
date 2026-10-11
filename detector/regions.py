@@ -9,7 +9,12 @@ Per processed frame (gated frames are skipped and change nothing):
   4. Track it: the same region while its bbox overlaps the previous one, else a new region starts
   5. candidate() when it has lasted >= PERSIST_S and, over the last PERSIST_S seconds, it grew by GROW_FRAC
      of its area, or its top edge rose >= RISE_TILES, or its centroid rose. Rising or spreading is the cue.
+     It must also be turbulent: the mean over its tiles and over the window of |score(t) - score(t-1)| is
+     >= MIN_TURBULENCE. Smoke flickers; a reset ghost, a standing person or a static pattern does not, and a
+     single step (something appearing once) adds little.
 """
+from collections import deque
+
 import cv2
 import numpy as np
 
@@ -25,6 +30,7 @@ class Region:
         self.mask = None           # bool [45, 80]
         self.bbox_tiles = None
         self.score_mean = 0.0      # mean raw score (0..255) over the region's tiles, this frame
+        self.turbulence = 0.0      # set by candidate(): mean frame-to-frame |score change| over the window
 
     @property
     def tiles(self):
@@ -47,6 +53,7 @@ class RegionTracker:
         self.s = np.zeros((TILES_Y, TILES_X), np.float32)
         self.ignores = []          # (bool mask [45, 80], until_t)
         self.region = None         # the tracked Region, or None when nothing qualifies this frame
+        self.recent = deque()      # (t, raw scores) of the non-gated frames in the last PERSIST_S seconds
 
     def ignore(self, mask, until):
         """Ignore these tiles until time `until` (REJECTED cooldown)."""
@@ -58,6 +65,9 @@ class RegionTracker:
             return self.region
         a = self.cfg.SMOOTH
         self.s = (1 - a) * self.s + a * scores.astype(np.float32)
+        self.recent.append((t, scores.copy()))
+        while self.recent[0][0] < t - self.cfg.PERSIST_S:
+            self.recent.popleft()
         mask = self.s >= self.t_flag
         self.ignores = [(m, u) for m, u in self.ignores if t < u]
         for m, _ in self.ignores:
@@ -97,4 +107,8 @@ class RegionTracker:
         _, area0, top0, cy0 = start
         grew = area >= area0 * (1 + c.GROW_FRAC)
         rose = top0 - top >= c.RISE_TILES or cy0 - cy > c.CENTROID_RISE
-        return r if (grew or rose) else None
+        if not (grew or rose):
+            return None
+        window = np.stack([s for _, s in self.recent]).astype(np.float32)[:, r.mask]
+        r.turbulence = float(np.abs(np.diff(window, axis=0)).mean()) if len(window) > 1 else 0.0
+        return r if r.turbulence >= c.MIN_TURBULENCE else None

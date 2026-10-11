@@ -6,7 +6,7 @@ The integer reference model for the tile scoring core, plus the ARM-side region 
 |---|---|
 | `config.py` | Frozen `Params` dataclass (the HLS registers), geometry, range validation, and `ArmParams` for regions/state |
 | `golden.py` | **The specification:** integer pixel features, tile means, score/gate logic, baseline updates and serialized state |
-| `regions.py` | `RegionTracker`: smooths scores, keeps the largest 8-connected flagged component, tracks it, and reports a candidate when it persists and rises or spreads |
+| `regions.py` | `RegionTracker`: smooths scores, keeps the largest 8-connected flagged component, tracks it, and reports a candidate when it persists, rises or spreads, and flickers (smoke is turbulent; ghosts and standing people are not) |
 | `state.py` | `StateMachine`: CLEAR / SUSPECT / CONFIRMED / REJECTED; returns actions (upload, ignore, rebaseline, verdict_timeout) and never executes them |
 | `__init__.py` | Package marker |
 

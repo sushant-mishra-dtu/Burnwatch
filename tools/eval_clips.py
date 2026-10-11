@@ -187,7 +187,8 @@ def table_md(results, params, arm, fps, cmd):
            f"Pipeline: letterbox to 1280x720, ARM-fast (640x360, 8x8 tiles), {fps} fps, `detector/golden.py` spec "
            f"v1 -> `detector/regions.py` -> `detector/state.py`, verdicts stubbed (no verdict), so at most one "
            f"SUSPECT per clip. Smoke is detected when SUSPECT falls inside the labelled smoke window; any other "
-           f"SUSPECT is a false alarm.", "",
+           f"SUSPECT is a false alarm. The region thresholds (`ArmParams`, notably `MIN_TURBULENCE`) were chosen on "
+           f"these same clips; there is no held-out set.", "",
            "Non-default parameters: " + (", ".join(
                f"`{k}={v}`" for k, v in {**_diff(params, Params()), **_diff(arm, ArmParams())}.items()) or "none") + ".",
            "",
@@ -284,13 +285,17 @@ def main():
               f"({time.time() - t0:.1f} s)", file=sys.stderr)
 
     if args.sweep:
-        print("| " + " | ".join(combos[0]) + " | detected | fixed-camera detected | false SUSPECTs | "
-              "non-smoke clips with a false SUSPECT | median time to SUSPECT s |")
-        print("|" + "---|" * (len(combos[0]) + 5))
+        print("| " + " | ".join(combos[0]) + " | detected | region on smoke (yes/partly/no/unreviewed) | "
+              "fixed-camera detected | false SUSPECTs | non-smoke clips with a false SUSPECT | median time to SUSPECT s |")
+        print("|" + "---|" * (len(combos[0]) + 6))
+        review = read_review()
         for c, res in zip(combos, results):
+            attach_review(res, review)
             s = summary(res)
             vals = " | ".join(f"{v:g}" for v in c.values())
-            print(f"| {vals} | {s['detected']}/{s['smoke']} | {s['fixed_detected']}/{s['fixed']} | {s['false']} | "
+            o = s["on_smoke"]
+            print(f"| {vals} | {s['detected']}/{s['smoke']} | {o['yes']}/{o['partly']}/{o['no']}/{o['']} | "
+                  f"{s['fixed_detected']}/{s['fixed']} | {s['false']} | "
                   f"{s['other_false']}/{s['other']} | "
                   f"{fmt_s(s['tts_median'])} |")
         return

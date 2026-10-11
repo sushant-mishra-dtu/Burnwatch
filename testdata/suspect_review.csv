@@ -15,3 +15,19 @@ firesense/neg/testneg02.808,24.4,no,road surface beside the people
 firesense/neg/testneg07.813,30.4,no,cloud behind bare branches
 firesense/neg/testneg08.814,13.7,no,waving flags
 firesense/neg/testneg09.815,17.0,no,cars
+20261011_101936,4.4,no,band along the drawer edge by the bowl; handheld shake (PERSIST_S=4)
+20261011_102913,7.7,no,ghost of the red decoration again (PERSIST_S=4)
+firesense/pos/testpos01.817,12.0,partly,upper edge of the plume plus lawn; handheld (PERSIST_S=4)
+firesense/pos/testpos02.818,4.7,yes,on the smoke above the roof (PERSIST_S=4)
+firesense/pos/testpos03.819,14.3,no,ground left of the fire; the smoke is further right (PERSIST_S=4)
+firesense/pos/testpos04.820,13.0,partly,right part of the plume plus grass; handheld (PERSIST_S=4)
+firesense/pos/testpos06.822,19.4,yes,on the smoke above the bucket (PERSIST_S=4)
+firesense/pos/testpos07.823,12.4,no,on the person beside the bucket (PERSIST_S=4)
+firesense/pos/testpos07.823,27.0,no,on the person bending by the bucket
+firesense/pos/testpos08.824,13.0,yes,on the smoke column (PERSIST_S=4)
+firesense/pos/testpos09.825,11.0,yes,on the smoke cloud; handheld (PERSIST_S=4)
+firesense/pos/testpos10.826,5.0,yes,top of the smoke column; handheld (PERSIST_S=4)
+firesense/pos/testpos11.827,15.0,yes,on the smoke; handheld (PERSIST_S=4)
+firesense/pos/testpos13.829,4.3,yes,on the smoke; handheld (PERSIST_S=4)
+firesense/neg/testneg01.807,4.7,no,tree crown in wind (PERSIST_S=4)
+firesense/neg/testneg09.815,15.0,no,cars (PERSIST_S=4)

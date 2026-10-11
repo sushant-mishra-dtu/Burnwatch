@@ -199,7 +199,7 @@ See [`overlays/rtl_sim/README.md`](overlays/rtl_sim/README.md) for vector genera
 ## Known limitations
 
 - Smoke detection is a visual heuristic, not a regulatory-grade smoke or AQI measurement.
-- The offline clip evaluation ([`docs/test_table.md`](docs/test_table.md)) is small and weak: 19 smoke and 9 non-smoke clips, mostly FIRESENSE videos upscaled to 720p. In the by-eye review, the alarm region is on the smoke in 4 of the 11 detected smoke clips, and 5 of the 9 non-smoke clips raise a false SUSPECT. No field accuracy is claimed.
+- The offline clip evaluation ([`docs/test_table.md`](docs/test_table.md)) is small and weak: 19 smoke and 9 non-smoke clips, mostly FIRESENSE videos upscaled to 720p. 8 smoke clips raise SUSPECT; in the by-eye review the alarm region is on the smoke in 4, partly in 3 and elsewhere in 1, and 2 of the 9 non-smoke clips (tree, traffic) raise a false SUSPECT. The region thresholds were tuned on these same clips, with no held-out set. No field accuracy is claimed.
 - The standalone RTL core has no AXI/PS wrapper and has not produced a deployable PYNQ overlay.
 - Synthesis and OOC timing do not meet the 100 MHz target.
 - The region tracker and state machine run only offline on clips; the PYNQ device loop is not written yet.

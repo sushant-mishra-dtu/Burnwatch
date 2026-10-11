@@ -10,6 +10,7 @@ from detector.config import ArmParams  # noqa: E402
 from detector.regions import RegionTracker  # noqa: E402
 
 DT = 1 / 3   # ~3 fps, as on the ARM
+GEOM = ArmParams(MIN_TURBULENCE=0)   # the geometric rules alone; test_turbulence covers the flicker rule
 
 
 def frame(*boxes, value=200):
@@ -64,7 +65,7 @@ def test_static_region_is_not_a_candidate():
 
 
 def test_growing_region_becomes_candidate_only_after_persist():
-    tr = RegionTracker(t_flag=40)
+    tr = RegionTracker(t_flag=40, cfg=GEOM)
     frames = [frame((20, 25, 30, 32 + i // 3)) for i in range(40)]      # widens by a tile a second
     t = 0.0
     for f in frames:
@@ -76,7 +77,7 @@ def test_growing_region_becomes_candidate_only_after_persist():
 
 
 def test_rising_top_edge_is_a_candidate():
-    tr = RegionTracker(t_flag=40, cfg=ArmParams(GROW_FRAC=10, CENTROID_RISE=100))   # only the top-edge rule
+    tr = RegionTracker(t_flag=40, cfg=ArmParams(GROW_FRAC=10, CENTROID_RISE=100, MIN_TURBULENCE=0))   # top edge only
     frames = [frame((30 - i // 4, 34 - i // 4, 30, 34)) for i in range(30)]        # same size, moving up
     run(tr, frames)
     assert tr.candidate() is not None
@@ -99,3 +100,16 @@ def test_ignore_mask_expires():
     tr.ignore(m, until=5.0)
     assert tr.update(frame((12, 16, 12, 16)), False, 0.0) is None
     assert tr.update(frame((12, 16, 12, 16)), False, 5.0) is not None
+
+
+def test_turbulence_separates_flicker_from_a_steady_blob():
+    """Same growing blob twice: steady scores (a reset ghost, a standing person) vs flickering ones (smoke)."""
+    rng = np.random.default_rng(0)
+    steady, smoke = RegionTracker(t_flag=40), RegionTracker(t_flag=40)
+    for i in range(40):
+        f = frame((20, 25, 30, 32 + i // 3))
+        steady.update(f, False, i * DT)
+        flick = np.where(f > 0, rng.integers(120, 256, f.shape), 0).astype(np.uint8)
+        smoke.update(flick, False, i * DT)
+    assert steady.candidate() is None
+    assert smoke.candidate() is not None and smoke.region.turbulence >= ArmParams().MIN_TURBULENCE

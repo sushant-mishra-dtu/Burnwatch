@@ -77,6 +77,9 @@ class ArmParams:
     GROW_FRAC: float = 0.25         # ... and over that window grow by this fraction of its area,
     RISE_TILES: int = 1             # ... or move its top edge up by this many tiles,
     CENTROID_RISE: float = 0.0      # ... or move its centroid row up by more than this (tiles)
+    MIN_TURBULENCE: float = 25.0    # ... and its tiles' raw scores must flicker: mean |score(t) - score(t-1)| over
+                                    #     the region and the window (0..255). Smoke is turbulent; ghosts, standing
+                                    #     people and static texture are steady. 0 = off.
     UPLOAD_COOLDOWN_S: float = 120  # CLEAR -> SUSPECT at most once per this many seconds per camera
     VERDICT_TIMEOUT_S: float = 90   # SUSPECT with no verdict this long emits verdict_timeout (once)
     IGNORE_S: float = 180           # REJECTED: the region's tiles are ignored this long
