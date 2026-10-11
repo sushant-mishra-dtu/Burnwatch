@@ -34,7 +34,7 @@ Owners follow Case A in BUILD_PLAN.md section 8 (Vivado on the Codex machine). *
 | P4 | AWS stack + IoT thing + device IAM | Codex | P0b | waiting: approval of template + IAM policies before deployment | cloud/template.yaml, idempotent IoT/IAM scripts, MQTT smoke test, verifier stub/cameras.json and device/.env.example ready. SAM lint + Python 3.13 build pass; 14 mocked cloud tests pass. No AWS stack or credentials provisioned; need deployment approval, AlertEmail and verified BedrockRegion. |
 | P5 | Lambda verifier (Claude on Bedrock, Nemotron fallback) | Claude Code | P4 | todo | |
 | P3 | Regions, state machine, eval_clips, replay viewer | Claude Code | P2, U2 | todo | |
-| P8 | HLS tile engine, bit-exact C-sim | Claude Code | P2 | todo | |
+| P8 | HLS tile engine, bit-exact C-sim | Claude Code | P2 | in progress (10:40) | |
 | GATE-H8 | Go / pivot to GaugeEye | Claude Code | P3 | todo | |
 | P6 | Device runtime (A: cloud client, B: PYNQ loop) | Claude Code | P1, P3, P4, GATE-H8 | todo | |
 | P7 | Live viewer + fake_device | Codex | P0b, P3 | todo | |
