@@ -9,7 +9,8 @@ flowchart LR
     STORE[DynamoDB + SNS<br/>planned verdict path]
     VIO[ZedBoard VIO package<br/>simulation/test control]
 
-    CAM --> LAP --> HDMI --> PL
+    CAM --> LAP --> HDMI
+    HDMI -.-> PL
     PL -->|3,600 tile scores| ARM
     ARM -.->|planned event/JPEG| AWS
     AWS -.-> VERIFY -.-> STORE
