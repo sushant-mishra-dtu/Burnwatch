@@ -1,5 +1,7 @@
 # BurnWatch: build plan for Saturday 10 Oct 2026
 
+> **Repository status at the current checkpoint:** the Python golden model, golden-vector tooling, camera/HDMI utilities, standalone RTL simulation, native synthesis/OOC reports and ZedBoard/VIO package now exist. The ARM region/state runtime, device cloud client, live viewer, HLS/AXI overlay and Lambda verifier remain unfinished. Treat the plan below as the historical implementation plan; use `README.md`, `PROGRESS.md` and the validation reports for the current evidence boundary.
+
 H0 = the moment you start. Write the clock time next to it: **H0 = ____**. Set phone alarms for **H8 (go/pivot)** and **H20 (PL cut)** right now.
 
 Each step has a prompt in [PROMPTS.md](PROMPTS.md) (P0–P13). Open Claude Code in the repo root so [CLAUDE.md](CLAUDE.md) loads, then paste the prompt.
